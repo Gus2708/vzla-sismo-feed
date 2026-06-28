@@ -50,17 +50,19 @@ export function MapaSismos() {
       .not('lat', 'is', null)
       .limit(100)
       .then(({ data }) => { if (data) setSismos(data as Sismo[]) })
-  }, [])
+  }, [supabase])
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">
-        Mapa de sismos registrados
-      </h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        {sismos.length} eventos registrados
-      </p>
-      <div style={{ height: '70vh' }} className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+    <main className="max-w-2xl mx-auto px-4 py-6">
+      <header className="mb-4">
+        <h1 className="text-title text-gray-900 dark:text-white">
+          Mapa de sismos registrados
+        </h1>
+        <p className="text-small text-gray-500 dark:text-gray-400 mt-1">
+          {sismos.length} eventos registrados por fuentes oficiales
+        </p>
+      </header>
+      <div style={{ height: '70vh' }} className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
         <MapContainer
           center={[10.48, -66.90]}
           zoom={6}
@@ -75,14 +77,14 @@ export function MapaSismos() {
               <Popup>
                 <p className="font-medium text-sm">{s.titulo}</p>
                 <p className="text-xs text-gray-500">{s.factcheck_confianza}% confianza</p>
-                <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600">
-                  Ver más →
+                <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-xs text-crisis-blue hover:underline">
+                  Ver mas
                 </a>
               </Popup>
             </Marker>
           ))}
         </MapContainer>
       </div>
-    </div>
+    </main>
   )
 }

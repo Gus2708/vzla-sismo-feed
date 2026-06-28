@@ -4,12 +4,13 @@
 - Repository root: `/home/phylip/Downloads/vzla-sismo-feed`
 - Standard startup path: `./init.sh` (pwd, Node check, `npm ci`, `npx tsc --noEmit`, `npm run build`, PWA artifact check)
 - Standard verification path: `./init.sh` from a clean state. Last run: green.
-- Current branch: `master` (Session 002 commit `040903f` on top of PR #14 merge `eba983c`; `fix/mapa-ssr-and-node-version` was merged in `d996682` before this session).
+- Current branch: `feat/agent-skills-frontend` (rediseño visual aplicado, listo para revisión).
 - Node: v24.14.1 (local). Engine pin: `>=20.0.0` covers the team baseline.
 - npm: 11.14.1 (local). Team baseline: 11.13.0. Engine pin: `>=11.0.0`.
 - Agent skills installed at project scope (`./.agents/skills/`, gitignored; `skills-lock.json` tracked). See Session 002.
-- Current highest-priority unfinished feature: pick a concrete frontend improvement using one of the installed skills as the source of truth.
-- Current blocker: none for the verification harness. Local Supabase not provisioned (`.env.local` uses placeholders so dev server boots without a real DB).
+- Frontend visual refresh applied on `feat/agent-skills-frontend`. See Session 003.
+- Current highest-priority unfinished feature: merge `feat/agent-skills-frontend` into `master` after team review, or continue with follow-up UX improvements (e.g. degraded-mode API guard).
+- Current blocker: none for the verification harness. Local Supabase not provisioned (`.env.local` uses placeholders so dev server boots without a real DB; feed shows intentional error empty state in local dev).
 
 ## Session Log
 
@@ -84,3 +85,43 @@
 - Next best step:
   - Pick one concrete frontend improvement (e.g. unified typography scale, a hero animation, a navigation transition) and implement it using the relevant skill as the source of truth.
   - When the team is ready: review and merge `fix/mapa-ssr-and-node-version` into `master`, then push.
+
+### Session 003 — 2026-06-28
+- Date: 2026-06-28
+- Goal: apply a visual redesign focused on crisis clarity and ease of understanding for the Venezuela earthquake emergency feed, using the installed agent skills as guidance and Playwright MCP for screenshot verification.
+- Design decisions (grounded in `frontend-design`, `web-design-guidelines`, `web-typography`, `vercel-react-best-practices`, `tailwind-css`):
+  - **Crisis-first palette**: red (`#DC2626`) reserved for the global alert banner, emergency FAB, and critical badges; grays and soft semantic colors for information. Avoids playful or distracting tones.
+  - **Removed all emojis from UI**: replaced with inline SVG icons (search, theme, menu, phone, warning, document, globe). Emojis reduce seriousness and hurt screen-reader clarity in a crisis context.
+  - **Typography**: system font stack (Inter/system-ui) for performance and familiarity; clear scale using `clamp()` for headings, 16px+ body, 1.6 line-height. No web-font blocking requests.
+  - **Global alert banner**: fixed red banner below header with warning icon and the text "Información verificada en tiempo real — Sismo Venezuela 24 jun". Single high-contrast signature element.
+  - **Prominent emergency access**: red FAB "Emergencias" (text on desktop, phone icon on mobile) opens a clean modal directory with Protección Civil, bomberos, operadoras, FUNVISIS and official platforms.
+  - **Clear empty/error states**: replaced confusing satellite emoji with an explanatory icon, heading, and action-oriented description.
+  - **Accessibility**: visible `:focus-visible` rings, reduced-motion media query, semantic HTML, aria labels on icon-only buttons.
+  - **Performance**: no new npm dependencies; only Tailwind v3 utilities and inline SVGs. `next/dynamic` for Leaflet preserved.
+- Files changed:
+  - `tailwind.config.js`: added `crisis` semantic colors, `font-sans`, `font-size` display/title/body/small/caption tokens, `fade-in` animation.
+  - `src/app/globals.css`: base typography, focus-visible rings, reduced-motion reset.
+  - `src/app/layout.tsx`: added `NumerosEmergencia` globally and `font-sans` class.
+  - `src/components/Navbar.tsx`: no emojis, SVG icons, cleaner active states, accessible labels.
+  - `src/components/FeedNoticias.tsx`: alert banner, improved header, SVG search icon, language buttons as text, short tag labels, clearer cards, better empty/error state.
+  - `src/components/SismosUSGS.tsx`: no emojis, magnitude severity labels, cleaner card layout.
+  - `src/components/NumerosEmergencia.tsx`: no emojis, cleaner modal with reusable `NumberCard`, consistent sections.
+  - `src/app/stats/page.tsx`: improved typography and spacing.
+  - `src/components/MapaSismos.tsx`: cleaner header and popup link styling.
+  - `.gitignore`: excluded `.playwright-mcp/` and `screenshots/` generated during verification.
+- Verification:
+  - `npx tsc --noEmit`: green.
+  - `./init.sh`: green (typecheck, build, PWA artifacts).
+  - Playwright MCP screenshots captured for baseline and after states (saved locally under `screenshots/`, gitignored):
+    - Desktop feed, stats, map (light and dark).
+    - Mobile feed (light and dark).
+    - Emergency modal.
+- Commits (pending):
+  - `feat(ui): crisis-focused visual redesign with accessible typography and emergency directory`
+- Files or artifacts updated: `tailwind.config.js`, `src/app/globals.css`, `src/app/layout.tsx`, `src/components/Navbar.tsx`, `src/components/FeedNoticias.tsx`, `src/components/SismosUSGS.tsx`, `src/components/NumerosEmergencia.tsx`, `src/app/stats/page.tsx`, `src/components/MapaSismos.tsx`, `.gitignore`, `PROGRESS.md`.
+- Known risk or unresolved issue:
+  - With placeholder Supabase env, `/api/feed` returns 500, so the feed shows an error empty state in local dev. This is expected and unchanged functionally; the UI now explains the failure clearly. A future follow-up could implement the degraded-mode guard noted in Session 001.
+  - `SismosUSGS` component is updated but not currently mounted in any page.
+- Next best step:
+  - Review the screenshots and commit `feat/agent-skills-frontend` to `master` when ready.
+  - Optional follow-up: implement degraded-mode API responses and wire `SismosUSGS` into a dedicated seismic monitoring page or tab.
