@@ -11,6 +11,8 @@ const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContai
 const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false })
 const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false })
 const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false })
+const GeoJSON = dynamic(() => import('react-leaflet').then(m => m.GeoJSON), { ssr: false })
+const Circle = dynamic(() => import('react-leaflet').then(m => m.Circle), { ssr: false })
 
 type Sismo = {
   id: string
@@ -21,12 +23,25 @@ type Sismo = {
   lng: number
 }
 
+function parseMag(titulo: string): number {
+  const match = titulo.match(/M(\d+(?:\.\d+)?)/)
+  return match ? parseFloat(match[1]) : 4
+}
+
+function magColor(mag: number): string {
+  if (mag >= 6) return '#DC2626'
+  if (mag >= 5) return '#EA580C'
+  if (mag >= 4) return '#CA8A04'
+  return '#16A34A'
+}
+
 export function MapaSismos() {
   const supabase = useMemo(() => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ), [])
   const [sismos, setSismos] = useState<Sismo[]>([])
+  const [outline, setOutline] = useState<GeoJSON.GeoJsonObject | null>(null)
 
   useEffect(() => {
     // Leaflet touches `window` at import time, so it must be loaded client-side only.
@@ -50,6 +65,11 @@ export function MapaSismos() {
       .not('lat', 'is', null)
       .limit(100)
       .then(({ data }) => { if (data) setSismos(data as Sismo[]) })
+
+    fetch('/data/venezuela.geojson')
+      .then(r => r.json())
+      .then(setOutline)
+      .catch(err => console.error('[mapa] Error cargando contorno:', err))
   }, [supabase])
 
   return (
@@ -73,6 +93,33 @@ export function MapaSismos() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {outline && (
+            <GeoJSON
+              data={outline}
+              style={{
+                color: '#CF1020',
+                weight: 2,
+                fillColor: '#CF1020',
+                fillOpacity: 0.04,
+              }}
+            />
+          )}
+          {sismos.map(s => {
+            const mag = parseMag(s.titulo)
+            return (
+              <Circle
+                key={`heat-${s.id}`}
+                center={[s.lat, s.lng]}
+                radius={Math.max(15000, mag * 15000)}
+                pathOptions={{
+                  color: magColor(mag),
+                  fillColor: magColor(mag),
+                  fillOpacity: 0.25,
+                  weight: 1,
+                }}
+              />
+            )
+          })}
           {sismos.map(s => (
             <Marker key={s.id} position={[s.lat, s.lng]}>
               <Popup>
