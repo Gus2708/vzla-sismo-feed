@@ -130,41 +130,41 @@ export function MapaVenezuelaSVG() {
       {/* 5. Etiquetas HTML Absolutas (Garantizan legibilidad 100% nítida a cualquier escala) */}
       
       {/* Maracaibo */}
-      <span className="absolute left-[13%] top-[13%] font-mono text-[9px] font-medium text-neutral-500 dark:text-zinc-500 pointer-events-none">
+      <span className="absolute left-[13%] top-[13%] font-mono text-[11px] font-semibold text-neutral-500 dark:text-zinc-400 pointer-events-none">
         Maracaibo
       </span>
 
       {/* Caracas */}
-      <span className="absolute left-[49%] top-[19%] font-mono text-[9px] font-medium text-neutral-500 dark:text-zinc-500 pointer-events-none">
+      <span className="absolute left-[49%] top-[19%] font-mono text-[11px] font-semibold text-neutral-500 dark:text-zinc-400 pointer-events-none">
         Caracas
       </span>
 
       {/* Primer Terremoto */}
       <div className="absolute left-[2%] top-[3%] flex flex-col text-left bg-panel/80 dark:bg-panel-dark/80 backdrop-blur-[2px] p-1.5 rounded border border-rule/50 dark:border-rule-dark/50 pointer-events-none">
-        <span className="font-mono text-[9px] font-bold text-neutral-500 dark:text-zinc-400 uppercase tracking-wider leading-none">
+        <span className="font-mono text-[10px] font-bold text-neutral-500 dark:text-zinc-400 uppercase tracking-wider leading-none">
           1er Terremoto
         </span>
-        <span className="font-sans text-xs font-black text-crisis-red mt-0.5 leading-none">
-          7,2 <span className="text-[10px] text-neutral-500 dark:text-zinc-500 font-normal">(Yaracuy)</span>
+        <span className="font-sans text-sm font-black text-crisis-red mt-0.5 leading-none">
+          7,2 <span className="text-[11px] text-neutral-500 dark:text-zinc-500 font-normal">(Yaracuy)</span>
         </span>
       </div>
 
       {/* Segundo Terremoto */}
       <div className="absolute left-[52%] top-[27%] flex flex-col text-left bg-panel/80 dark:bg-panel-dark/80 backdrop-blur-[2px] p-1.5 rounded border border-rule/50 dark:border-rule-dark/50 pointer-events-none">
-        <span className="font-mono text-[9px] font-bold text-neutral-500 dark:text-zinc-400 uppercase tracking-wider leading-none">
+        <span className="font-mono text-[10px] font-bold text-neutral-500 dark:text-zinc-400 uppercase tracking-wider leading-none">
           2do Terremoto
         </span>
-        <span className="font-sans text-xs font-black text-crisis-red mt-0.5 leading-none">
-          7,5 <span className="text-[10px] text-neutral-500 dark:text-zinc-500 font-normal">(Carabobo)</span>
+        <span className="font-sans text-sm font-black text-crisis-red mt-0.5 leading-none">
+          7,5 <span className="text-[11px] text-neutral-500 dark:text-zinc-500 font-normal">(Carabobo)</span>
         </span>
       </div>
 
       {/* La Guaira */}
       <div className="absolute left-[59%] top-[7%] flex flex-col text-left pointer-events-none">
-        <span className="font-mono text-[9px] font-black text-crisis-red uppercase tracking-wider leading-none">
+        <span className="font-mono text-[11px] font-black text-crisis-red uppercase tracking-wider leading-none">
           La Guaira
         </span>
-        <span className="font-mono text-[8px] text-neutral-500 dark:text-zinc-500 mt-0.5 leading-none">
+        <span className="font-mono text-[9px] text-neutral-500 dark:text-zinc-500 mt-0.5 leading-none">
           (más afectada)
         </span>
       </div>

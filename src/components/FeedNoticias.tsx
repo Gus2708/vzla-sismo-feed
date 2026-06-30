@@ -220,7 +220,7 @@ function ResumenEvento() {
       </button>
       {open && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6 items-center">
-          <div className="lg:col-span-7 grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className="lg:col-span-8 grid grid-cols-2 gap-x-6 gap-y-4">
             {RESUMEN_DATOS.map(({ num, label, red }) => (
               <div key={label} className="border-l-2 border-rule dark:border-rule-dark pl-4 py-1">
                 <p className={`font-mono text-xl sm:text-2xl font-bold ${red ? 'text-crisis-red' : 'text-ink dark:text-ink-dark'}`}>{num}</p>
@@ -231,7 +231,7 @@ function ResumenEvento() {
               Cifras provisionales · 28 jun 2026 · Fuente: medios verificados
             </p>
           </div>
-          <div className="lg:col-span-5 w-full max-w-[380px] lg:max-w-none mx-auto">
+          <div className="lg:col-span-4 w-full max-w-[310px] mx-auto">
             <MapaVenezuelaSVG />
           </div>
         </div>
