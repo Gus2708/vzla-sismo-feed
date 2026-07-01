@@ -62,9 +62,40 @@ const withPWA = require('next-pwa')({
   ],
 })
 
+// CSP: connect-src cubre Supabase (REST + Realtime wss) y Groq (llamado solo
+// desde el servidor, pero se deja explícito por si se agrega fetch client-side).
+// img-src usa https: amplio porque imagen_url viene de RSS externos arbitrarios.
+// script-src sin 'unsafe-inline': el código no usa <script> inline (next-pwa
+// registra el service worker vía chunk normal, no inyección inline).
+// style-src necesita 'unsafe-inline': framer-motion aplica animaciones via
+// atributo style="" inline en cada render.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://earthquake.usgs.gov",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ')
+
+const SECURITY_HEADERS = [
+  { key: 'Content-Security-Policy', value: CSP },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'geolocation=(), camera=(), microphone=()' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }]
+  },
 }
 
 module.exports = withPWA(nextConfig)

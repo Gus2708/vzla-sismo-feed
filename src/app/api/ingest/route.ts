@@ -87,7 +87,10 @@ export async function GET(req: Request) {
         const pubDateRaw = new Date(item.pubDate ?? '')
         const pubDate = isNaN(pubDateRaw.getTime()) ? new Date() : pubDateRaw
 
-        if (!url || !titulo) continue
+        // Solo URLs http(s): item.link viene de RSS externo y se renderiza como
+        // href en el cliente — sin este check un feed comprometido podría colar
+        // un esquema javascript:/data: (mismo criterio que extraerImagenRSS).
+        if (!url || !url.startsWith('http') || !titulo) continue
 
         // 1. Pre-filtro por keywords (gratis, rápido)
         if (!preFiltroPasa(titulo, desc)) continue

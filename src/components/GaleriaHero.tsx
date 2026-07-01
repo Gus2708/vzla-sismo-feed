@@ -115,6 +115,7 @@ function GaleriaImagen({ src, alt, tag }: { src: string; alt: string; tag: strin
         alt={alt}
         fill
         unoptimized
+        referrerPolicy="no-referrer"
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
         className={`object-cover transition-opacity duration-500 ease-out ${loaded ? 'opacity-100' : 'opacity-0'}`}
