@@ -80,11 +80,11 @@ const CSP = [
   // 'unsafe-eval' is required in development: Next.js webpack runtime uses eval() for
   // source maps and Fast Refresh. Without it, React cannot execute state updates in dev mode.
   // In production, Next.js uses static chunks — no eval() needed.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://earthquake.usgs.gov",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://earthquake.usgs.gov https://va.vercel-scripts.com https://vitals.vercel-insights.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

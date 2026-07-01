@@ -829,6 +829,7 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
                           alt={n.titulo}
                           fill
                           unoptimized
+                          priority={i === 0}
                           referrerPolicy="no-referrer"
                           sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw"
                           onError={() => setFailedImg(prev => {

@@ -175,17 +175,19 @@ export function NumerosEmergencia() {
 
       {/* Modal overlay — always in DOM, hidden via display when closed */}
       <div
+        suppressHydrationWarning
         style={{ display: isOpen ? 'flex' : 'none' }}
         className="fixed inset-0 z-[1100] items-end sm:items-center justify-center p-0 sm:p-4"
       >
         {/* Backdrop */}
         <div
+          suppressHydrationWarning
           onClick={close}
           className="absolute inset-0 bg-ink/50 backdrop-blur-md"
         />
 
         {/* Modal Content */}
-        <div className="relative bg-panel dark:bg-panel-dark w-full sm:max-w-lg h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-lg sm:rounded-sm shadow-2xl flex flex-col border-t-2 border-crisis-red overflow-hidden z-10 animate-pc-slide-up">
+        <div suppressHydrationWarning className="relative bg-panel dark:bg-panel-dark w-full sm:max-w-lg h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-lg sm:rounded-sm shadow-2xl flex flex-col border-t-2 border-crisis-red overflow-hidden z-10 animate-pc-slide-up">
           {/* Drag Handle indicator for mobile */}
           <div className="flex justify-center py-2.5 sm:hidden shrink-0 bg-panel dark:bg-panel-dark">
             <div className="w-12 h-1 bg-rule dark:bg-rule-dark rounded-full opacity-60" />
