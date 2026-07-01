@@ -80,6 +80,22 @@ function ChangeView({ selectedSismo }: { selectedSismo: Sismo | null }) {
   return null
 }
 
+// Leaflet caches the container's pixel size when the map initializes. Mounting
+// via next/dynamic (and toggling the 2D/3D tab) can init the map while the
+// container is still 0/partial height, so it paints tiles for only that stale
+// area. Recompute right after mount and on every container resize.
+function InvalidateSize() {
+  const map = useMap()
+  useEffect(() => {
+    const fix = () => map.invalidateSize()
+    const t = setTimeout(fix, 200)
+    const ro = new ResizeObserver(fix)
+    ro.observe(map.getContainer())
+    return () => { clearTimeout(t); ro.disconnect() }
+  }, [map])
+  return null
+}
+
 type Props = {
   sismos: Sismo[]
   outline: GeoJSON.GeoJsonObject | null
@@ -107,9 +123,15 @@ export default function LeafletMap({ sismos, outline, dark, selectedSismo, onSel
     <MapContainer
       center={[10.48, -66.90]}
       zoom={6}
-      style={{ height: '100%', width: '100%' }}
+      // Absolute-fill the (relative) wrapper instead of height:100%. As a flex
+      // item the wrapper's height is "indefinite" for percentage resolution, so
+      // height:100% collapsed the map to 0px once Leaflet's own CSS applied.
+      // inset:0 sizes it off the wrapper's box directly, sidestepping that.
+      className="!absolute inset-0"
+      style={{ width: '100%', height: '100%' }}
     >
       <ChangeView selectedSismo={selectedSismo} />
+      <InvalidateSize />
       <TileLayer
         attribution={dark ? DARK_TILES.attribution : LIGHT_TILES.attribution}
         url={dark ? DARK_TILES.url : LIGHT_TILES.url}
