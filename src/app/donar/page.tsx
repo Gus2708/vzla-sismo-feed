@@ -257,68 +257,45 @@ export default function DonarPage() {
 
   return (
     <main className="pb-12 lg:pb-16">
-      {/* Hero: diseño editorial asimétrico de dos columnas */}
-      <div className="relative pt-12 pb-10 lg:pt-16 lg:pb-14 border-b border-rule dark:border-rule-dark mb-10">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            <div className="lg:col-span-7 flex flex-col justify-center">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="font-mono text-[10px] uppercase tracking-widest text-crisis-red mb-3 font-semibold"
-              >
-                Iniciativa Humanitaria
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.05 }}
-                className="font-serif text-hero lg:text-masthead text-ink dark:text-ink-dark"
-              >
-                Guía para donar
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.1 }}
-                className="text-lead text-ink/75 dark:text-ink-dark/75 mt-4 max-w-prose"
-              >
-                Directorio verificado de organizaciones y requerimientos urgentes de ayuda humanitaria para los afectados por el sismo en Venezuela. Tocá cualquier recurso para acceder a los canales oficiales.
-              </motion.p>
-            </div>
-            <div className="lg:col-span-5 relative">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.15 }}
-                className="relative overflow-hidden bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark rounded-sm p-3 shadow-soft"
-              >
-                <div className="relative aspect-[16/10] overflow-hidden bg-paper dark:bg-paper-dark rounded-sm">
-                  {imgOk ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src="https://upload.wikimedia.org/wikipedia/commons/e/ec/GuLong_canned_food_on_the_shelf.jpg"
-                      alt="Donación de alimentos e insumos"
-                      className="w-full h-full object-cover filter grayscale contrast-[1.05] dark:brightness-90"
-                      onError={() => setImgOk(false)}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col justify-center items-center p-6 text-center bg-crisis-red/5 dark:bg-crisis-red/10">
-                      <span className="font-serif font-semibold text-lg text-crisis-red mb-2">Ayuda Directa</span>
-                      <p className="text-xs text-ink/75 dark:text-ink-dark/75 max-w-xs">
-                        Cada aporte canalizado a través de estas organizaciones llega directamente a las zonas de desastre en Venezuela.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2.5 flex justify-between items-center px-1 font-mono text-[9px] text-ink-muted dark:text-ink-muted-dark uppercase tracking-widest">
-                  <span>Registro de asistencia</span>
-                  <span>Junio 2026</span>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+      {/* Hero: foto real de fondo con degradado hacia el fondo de la página. Si la
+          imagen no carga (sin conexión, dominio caído), se oculta sola y queda un
+          fondo sólido — no un ícono de imagen rota. */}
+      <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden bg-panel dark:bg-panel-dark border-b border-rule dark:border-rule-dark mb-10">
+        {imgOk && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="https://commons.wikimedia.org/wiki/Special:FilePath/GuLong_canned_food_on_the_shelf.jpg"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-[1.02] dark:brightness-50 opacity-15 dark:opacity-25"
+            onError={() => setImgOk(false)}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-paper/85 to-paper dark:via-paper-dark/85 dark:to-paper-dark" />
+        <div className="relative z-10 h-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 flex flex-col justify-end pb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="font-mono text-[10px] uppercase tracking-widest text-crisis-red mb-3 font-semibold"
+          >
+            Iniciativa Humanitaria
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.05 }}
+            className="font-serif text-hero lg:text-masthead text-ink dark:text-ink-dark leading-none"
+          >
+            Guía para donar
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.1 }}
+            className="text-lead text-ink/75 dark:text-ink-dark/75 mt-3 max-w-prose"
+          >
+            Directorio verificado de organizaciones y requerimientos urgentes de ayuda humanitaria para los afectados por el sismo en Venezuela. Tocá cualquier recurso para acceder a los canales oficiales.
+          </motion.p>
         </div>
       </div>
 
