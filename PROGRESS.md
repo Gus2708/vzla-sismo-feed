@@ -338,22 +338,27 @@
 
 ### Session 010 — 2026-07-01
 - Date: 2026-07-01
-- Goal: mejorar el UI/UX de las páginas de donaciones (/donar) y estadísticas (/stats) usando las directrices de /ui-ux-pro-max y /impeccable, respetando el estilo editorial.
+- Goal: mejorar el UI/UX de las páginas de donaciones (/donar), estadísticas (/stats) e inicio (/) usando las directrices de /ui-ux-pro-max y /impeccable, respetando el estilo editorial.
 - Completed:
   - Inicialización del contexto estratégico visual mediante los artefactos PRODUCT.md y DESIGN.md bajo el registro "brand".
-  - **Página de donaciones**:
-    - Remoción de side-stripe borders (bordes izquierdos rojos de 3px) en InsumoCard y OrgCard para eliminar malas prácticas ("AI Tells").
+  - **Página de inicio (/)**:
+    - Remoción de side-stripe borders (bordes izquierdos de 3px) en tarjetas de noticias, esqueletos de carga y `EmptyState` para erradicar malas prácticas ("AI Tells").
+    - Corrección del bug de legibilidad en hover (que forzaba fondo `#1A1A1A` sobre texto oscuro) en `GaleriaHero.tsx` y `FeedNoticias.tsx`, adoptando transiciones de opacidad seguras.
+    - Unificación y ordenamiento geométrico de la redondez de tarjetas a `rounded-sm`.
+    - Eliminación de colores y placeholders hardcodeados en el buscador y filtros por clases de opacidad con tokens de contraste WCAG AA.
+    - Rediseño de la alerta toast de réplicas sísmicas con un estilo premium en tonos ámbar oscuros/claros adaptables y de alto contraste.
+  - **Página de donaciones (/donar)**:
+    - Remoción de side-stripes en InsumoCard y OrgCard, corrección de hover bugs de legibilidad y distinción de socios locales sin enlace.
     - Restablecimiento del Hero a su diseño de fondo completo (full-bleed) original con la URL original de Wikimedia y opacidad controlada.
-    - Solución del hover bug de OrgCard (fondo negro sobre texto negro en modo claro) mediante transiciones basadas en opacidad.
-    - Diferenciación visual de socios locales que no disponen de URL de redirección directa.
-  - **Página de estadísticas**:
+  - **Página de estadísticas (/stats)**:
     - Integración y maquetación de la sección oficial de víctimas y daños (fallecidos, heridos, desaparecidos) expuesta por la API de backend, anteriormente oculta.
     - Rediseño de la cabecera editorial y del panel del boletín (tarjeta asimétrica de reportes verificados).
     - Unificación de los colores de categorías con `FeedNoticias.tsx` y refinamiento de la tabla de distribución (barras más delgadas de 4px de altura, rectangulares y con hover interactivo).
-  - Corrección de contrastes WCAG AA (>=4.5:1) en textos secundarios sobre fondo paper en ambas páginas.
+  - Corrección de contrastes WCAG AA (>=4.5:1) en textos secundarios sobre fondo paper en todas las páginas.
 - Verification:
   - Compilación limpia de producción y análisis de tipos pasados con éxito (`npm run build`).
 - Commits:
   - `6303c33` feat(donar): improve ui-ux and establish design system
   - `daf1f95` feat(stats): improve ui-ux and integrate casualties data
   - `6bc3347` fix(donar): restore full-bleed background image in hero
+  - `7ee64b8` feat(home): improve homepage ui-ux and align with design tokens
