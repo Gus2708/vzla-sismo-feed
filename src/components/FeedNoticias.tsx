@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo, type Dispatch, type SetStateAction } from 'react'
 import { createPortal } from 'react-dom'
 import NextImage from 'next/image'
 import { createClient } from '@supabase/supabase-js'
@@ -100,38 +100,60 @@ function fuenteLabel(tipo: string, fuente: string) {
   return fuente
 }
 
-// Square thumbnail shown at the left of each feed card. Same load lifecycle as
-// the gallery images: skeleton holds the slot until the image decodes, then it
-// fades in. On error the whole thumbnail is removed and the card reflows to
-// text-only (matches how ~17% of news arrive with no imagen_url at all).
-// unoptimized: imagen_url points at arbitrary external hosts (RSS media), so we
-// skip Next's optimizer; referrerPolicy avoids leaking our URL to those hosts.
-function CardThumb({ src, alt }: { src: string; alt: string }) {
-  const [loaded, setLoaded] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const imgRef = useRef<HTMLImageElement>(null)
-
-  useEffect(() => {
-    if (imgRef.current?.complete) setLoaded(true)
-  }, [])
-
-  if (failed) return null
-
+// Share controls (WhatsApp · Telegram · copy link) shared by both card
+// variants (image-hero and text-only). Hover-revealed; the copy button swaps
+// to a check for 1.5s after copying. e.preventDefault/stopPropagation keep the
+// clicks from following the card's own href.
+function CardShareRow({ n, copiadoId, setCopiadoId }: {
+  n: Noticia
+  copiadoId: string | null
+  setCopiadoId: Dispatch<SetStateAction<string | null>>
+}) {
   return (
-    <div className="relative w-20 h-20 shrink-0 overflow-hidden bg-panel dark:bg-panel-dark">
-      {!loaded && <div className="absolute inset-0 skeleton" />}
-      <NextImage
-        ref={imgRef}
-        src={src}
-        alt={alt}
-        fill
-        unoptimized
-        referrerPolicy="no-referrer"
-        sizes="80px"
-        onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
-        className={`object-cover transition-opacity duration-500 ease-out ${loaded ? 'opacity-100' : 'opacity-0'}`}
-      />
+    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-3 pt-2 border-t border-rule dark:border-rule-dark">
+      <button
+        onClick={e => {
+          e.preventDefault()
+          e.stopPropagation()
+          window.open(
+            `https://wa.me/?text=${encodeURIComponent(n.titulo + '\n' + n.url)}`,
+            '_blank',
+            'noopener,noreferrer'
+          )
+        }}
+        className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors px-2 py-1"
+      >
+        WA
+      </button>
+      <button
+        onClick={e => {
+          e.preventDefault()
+          e.stopPropagation()
+          window.open(
+            `https://t.me/share/url?url=${encodeURIComponent(n.url)}&text=${encodeURIComponent(n.titulo)}`,
+            '_blank',
+            'noopener,noreferrer'
+          )
+        }}
+        className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors px-2 py-1"
+      >
+        TG
+      </button>
+      <button
+        onClick={e => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(n.url).catch(() => {})
+          }
+          setCopiadoId(n.id)
+          setTimeout(() => setCopiadoId(prev => prev === n.id ? null : prev), 1500)
+        }}
+        aria-label="Copiar enlace"
+        className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors px-2 py-1"
+      >
+        {copiadoId === n.id ? <CheckIcon /> : <LinkIcon />}
+      </button>
     </div>
   )
 }
@@ -396,6 +418,8 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
 
   // Feature 1: copy feedback per card
   const [copiadoId, setCopiadoId] = useState<string | null>(null)
+  // Cards whose imagen_url failed to load — they fall back to the text layout.
+  const [failedImg, setFailedImg] = useState<Set<string>>(new Set())
   // Feature 3: replica toast
   const [replicaToast, setReplicaToast] = useState<string | null>(null)
   // Feature 5: browser notifications
@@ -728,24 +752,17 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
 
         {/* Grid de cards */}
         {cargando ? (
-          // Mirrors the real card (header row + title + description) so the grid
+          // Mirrors the hero card (image block on top + text below) so the grid
           // doesn't reflow when the feed arrives.
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark border-l-[3px] p-4">
-                <div className="flex gap-3">
-                  {/* Thumbnail placeholder — most cards carry an image (~82%). */}
-                  <div className="w-20 h-20 shrink-0 skeleton" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="h-2.5 w-16 rounded skeleton" />
-                      <div className="h-2.5 w-24 rounded skeleton" />
-                    </div>
-                    <div className="h-4 w-full rounded skeleton mb-2" />
-                    <div className="h-4 w-4/5 rounded skeleton mb-3" />
-                    <div className="h-3 w-full rounded skeleton mb-1.5" />
-                    <div className="h-3 w-2/3 rounded skeleton" />
-                  </div>
+              <div key={i} className="bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark border-l-[3px] overflow-hidden">
+                {/* Image block on top mirrors the hero card (~82% carry an image). */}
+                <div className="aspect-[16/10] w-full skeleton" />
+                <div className="px-4 pt-2.5 pb-4">
+                  <div className="h-2.5 w-28 rounded skeleton mb-3" />
+                  <div className="h-3 w-full rounded skeleton mb-1.5" />
+                  <div className="h-3 w-2/3 rounded skeleton" />
                 </div>
               </div>
             ))}
@@ -758,6 +775,7 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
               <AnimatePresence initial={false}>
               {noticias.map((n, i) => {
                 const meta = TAG_META[n.tag]
+                const hasImage = Boolean(n.imagen_url) && !failedImg.has(n.id)
                 return (
                   <motion.a
                     key={n.id}
@@ -771,15 +789,59 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
                     className={`
                       group block bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark rounded-none
                       border-l-[3px] ${meta?.border ?? 'border-l-[#444]'}
-                      p-4 hover:bg-[#1A1A1A] transition-colors
+                      overflow-hidden hover:bg-[#1A1A1A] transition-colors
                       ${isNuevo(n) ? 'ring-1 ring-inset ring-[#CF1020]/30' : ''}
                     `}
                   >
-                    {/* Miniatura (si la noticia trae imagen) + bloque de texto */}
-                    <div className="flex gap-3">
-                      {n.imagen_url && <CardThumb src={n.imagen_url} alt={n.titulo} />}
-                      <div className="min-w-0 flex-1">
-                        {/* Primera línea: tag · tsunami · fuente · tiempo */}
+                    {hasImage ? (
+                      // Variante hero: foto arriba, scrim que la funde hacia el
+                      // color del panel, y el titular sobre esa zona oscura.
+                      <>
+                        <div className="relative aspect-[16/10] w-full overflow-hidden bg-rule/40 dark:bg-[#0D0D0D]">
+                          <NextImage
+                            src={n.imagen_url as string}
+                            alt={n.titulo}
+                            fill
+                            unoptimized
+                            referrerPolicy="no-referrer"
+                            sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw"
+                            onError={() => setFailedImg(prev => {
+                              const s = new Set(prev)
+                              s.add(n.id)
+                              return s
+                            })}
+                            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] motion-reduce:transform-none"
+                          />
+                          {/* Scrim: garantiza contraste del titular sin depender de que la foto sea oscura. */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/80 to-transparent dark:from-panel-dark dark:via-panel-dark/80" />
+                          {/* Tag chip sobre la foto */}
+                          <span className={`absolute top-2.5 left-2.5 font-mono text-[10px] uppercase tracking-widest px-1.5 py-0.5 bg-panel/80 dark:bg-panel-dark/80 backdrop-blur-sm ${meta?.text ?? 'text-ink-muted dark:text-ink-muted-dark'}`}>
+                            {meta?.short ?? n.tag}
+                          </span>
+                          {n.tsunami && (
+                            <span className="absolute top-2.5 right-2.5 font-mono text-[10px] uppercase tracking-widest text-crisis-red flex items-center gap-1 px-1.5 py-0.5 bg-panel/80 dark:bg-panel-dark/80 backdrop-blur-sm" title="Alerta de tsunami">
+                              <TsunamiIcon /> Tsunami
+                            </span>
+                          )}
+                          {/* Titular sobre la zona oscura del scrim */}
+                          <h2 className="absolute inset-x-0 bottom-0 px-4 pb-3 font-serif font-semibold text-[1.05rem] leading-snug text-ink dark:text-ink-dark group-hover:text-[#CF1020] transition-colors">
+                            {n.titulo}
+                          </h2>
+                        </div>
+                        <div className="px-4 pt-2.5 pb-4">
+                          <div className="flex items-center gap-2 mb-1.5 font-mono text-[10px] text-ink-muted dark:text-ink-muted-dark tracking-wide tnum">
+                            <span className="truncate">{fuenteLabel(n.fuente_tipo, n.fuente)} · {tiempoRelativo(n.publicado_at)}</span>
+                            {isNuevo(n) && <span className="ml-auto shrink-0 uppercase tracking-widest text-crisis-red">Nuevo</span>}
+                          </div>
+                          {n.descripcion && (
+                            <p className="text-xs text-ink-muted dark:text-ink-muted-dark line-clamp-2">{n.descripcion}</p>
+                          )}
+                          <CardShareRow n={n} copiadoId={copiadoId} setCopiadoId={setCopiadoId} />
+                        </div>
+                      </>
+                    ) : (
+                      // Variante solo-texto: noticias sin imagen o con imagen fallida.
+                      <div className="p-4">
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className={`font-mono text-[10px] uppercase tracking-widest shrink-0 ${meta?.text ?? 'text-ink-muted dark:text-ink-muted-dark'}`}>
                             {meta?.short ?? n.tag}
@@ -793,73 +855,18 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
                             {fuenteLabel(n.fuente_tipo, n.fuente)} · {tiempoRelativo(n.publicado_at)}
                           </span>
                         </div>
-
-                        {/* Título */}
                         <h2 className="font-serif font-semibold text-[1.05rem] leading-snug text-ink dark:text-ink-dark group-hover:text-[#CF1020] transition-colors mb-2">
                           {n.titulo}
                         </h2>
-
-                        {/* Descripción */}
                         {n.descripcion && (
-                          <p className="text-xs text-ink-muted dark:text-ink-muted-dark line-clamp-2">
-                            {n.descripcion}
-                          </p>
+                          <p className="text-xs text-ink-muted dark:text-ink-muted-dark line-clamp-2">{n.descripcion}</p>
                         )}
-
                         {isNuevo(n) && (
-                          <span className="inline-block mt-1.5 font-mono text-[10px] uppercase tracking-widest text-crisis-red">
-                            Nuevo
-                          </span>
+                          <span className="inline-block mt-1.5 font-mono text-[10px] uppercase tracking-widest text-crisis-red">Nuevo</span>
                         )}
+                        <CardShareRow n={n} copiadoId={copiadoId} setCopiadoId={setCopiadoId} />
                       </div>
-                    </div>
-
-                    {/* Feature 1: botones de compartir */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-3 pt-2 border-t border-rule dark:border-rule-dark">
-                      <button
-                        onClick={e => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          window.open(
-                            `https://wa.me/?text=${encodeURIComponent(n.titulo + '\n' + n.url)}`,
-                            '_blank',
-                            'noopener,noreferrer'
-                          )
-                        }}
-                        className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors px-2 py-1"
-                      >
-                        WA
-                      </button>
-                      <button
-                        onClick={e => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          window.open(
-                            `https://t.me/share/url?url=${encodeURIComponent(n.url)}&text=${encodeURIComponent(n.titulo)}`,
-                            '_blank',
-                            'noopener,noreferrer'
-                          )
-                        }}
-                        className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors px-2 py-1"
-                      >
-                        TG
-                      </button>
-                      <button
-                        onClick={e => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          if (navigator.clipboard) {
-                            navigator.clipboard.writeText(n.url).catch(() => {})
-                          }
-                          setCopiadoId(n.id)
-                          setTimeout(() => setCopiadoId(prev => prev === n.id ? null : prev), 1500)
-                        }}
-                        aria-label="Copiar enlace"
-                        className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors px-2 py-1"
-                      >
-                        {copiadoId === n.id ? <CheckIcon /> : <LinkIcon />}
-                      </button>
-                    </div>
+                    )}
                   </motion.a>
                 )
               })}
