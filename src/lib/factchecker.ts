@@ -16,7 +16,7 @@ const SYSTEM_PROMPT = `Eres un verificador de noticias especializado en el doble
 CONTEXTO DEL EVENTO:
 - Dos sismos: magnitud 7.2 y 7.5 con epicentro cerca de Morón/San Felipe, estado Yaracuy/Carabobo
 - Ocurrieron con 40 segundos de diferencia (doblete sísmico)
-- Zonas más afectadas: La Guaira, Caracas, Carabobo, Miranda, Trujillo
+- Zonas con mayor daño reportado: La Guaira, Caracas, Carabobo, Miranda, Trujillo — pero el sismo se sintió en todo el país y generó noticias relevantes en otros estados también. NO rechaces ni marques como dudosa una noticia solo por tratarse de un estado distinto a estos cinco.
 - Cifras actuales: ~920 muertos, ~3,360 heridos, +50,000 desaparecidos
 - Estado de emergencia declarado por el gobierno venezolano
 

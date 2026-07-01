@@ -178,7 +178,14 @@ export const FUENTES: Source[] = [
 export const KEYWORDS_REQUERIDOS = [
   // Español
   'venezuela', 'venezuel',
-  'la guaira', 'carabobo', 'yaracuy', 'caracas', 'morón', 'moron', 'san felipe',
+  // Estados venezolanos (todos, no solo los más golpeados) — para que noticias que
+  // mencionan un estado sin usar una palabra genérica de desastre también pasen el pre-filtro.
+  'la guaira', 'vargas', 'carabobo', 'yaracuy', 'caracas', 'distrito capital',
+  'miranda', 'trujillo', 'aragua', 'falcón', 'falcon', 'lara', 'zulia',
+  'mérida', 'merida', 'táchira', 'tachira', 'barinas', 'portuguesa', 'guárico', 'guarico',
+  'anzoátegui', 'anzoategui', 'sucre', 'monagas', 'nueva esparta', 'apure',
+  'bolívar', 'bolivar', 'amazonas', 'delta amacuro', 'cojedes',
+  'morón', 'moron', 'san felipe',
   'terremoto', 'sismo', 'temblor', 'réplica', 'replica',
   'rescate', 'desaparecid', 'escombros', 'derrumb',
   // Inglés
