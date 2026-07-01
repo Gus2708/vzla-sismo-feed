@@ -80,6 +80,11 @@ const ORGANIZACIONES: Organizacion[] = [
     descripcion: 'Comunidad de egresados de la USB canalizando apoyo de forma ágil y directa hacia familias afectadas.',
     url: 'https://alumnusb.org/ayuda-tras-terremoto/',
   },
+  {
+    nombre: 'Dona con Yummy',
+    descripcion: 'Campaña de la súper-app venezolana Yummy para canalizar donaciones hacia la ayuda a los afectados por el sismo, con recaudación digital directa.',
+    url: 'https://dona.yummyrides.com/',
+  },
 ]
 
 // Iconos simples y geométricos (24px, stroke=currentColor, strokeWidth 1.8) — cada uno
