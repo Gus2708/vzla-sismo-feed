@@ -1,6 +1,9 @@
 'use client'
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@supabase/supabase-js'
+import { AnimatePresence, motion } from 'framer-motion'
+import { MapaVenezuelaSVG } from './MapaVenezuelaSVG'
 
 type Noticia = {
   id: string
@@ -70,6 +73,116 @@ function SearchIcon() {
   )
 }
 
+// Same outline-icon vocabulary as ThemeIcon/MenuIcon in Navbar.tsx:
+// 14px, stroke=currentColor, strokeWidth 2, round caps/joins, no fill.
+function BellIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 8a6 6 0 0 1 12 0c0 4.5 1.5 6.5 2 7H4c.5-.5 2-2.5 2-7" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+  )
+}
+
+function ExportIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 21h14" />
+      <path d="M12 17V4" />
+      <path d="m7 9 5-5 5 5" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    </svg>
+  )
+}
+
+const HINT_ACCIONES_KEY = 'sismo-hint-acciones-v1'
+
+// One-time, dismissible feature hint pointing at the alerts/export controls.
+// Shown once per browser (localStorage flag), never reappears once closed.
+function HintAcciones() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (!localStorage.getItem(HINT_ACCIONES_KEY)) setVisible(true)
+  }, [])
+
+  const dismiss = () => {
+    localStorage.setItem(HINT_ACCIONES_KEY, '1')
+    setVisible(false)
+  }
+
+  if (!visible) return null
+
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 border-b border-rule dark:border-rule-dark bg-panel dark:bg-panel-dark">
+      <p className="font-mono text-[11px] text-ink-muted dark:text-ink-muted-dark tracking-wide leading-relaxed">
+        Activá <strong className="text-ink dark:text-ink-dark font-semibold">alertas</strong> para enterarte de réplicas al instante, o <strong className="text-ink dark:text-ink-dark font-semibold">exportá</strong> el boletín completo — los botones están arriba.
+      </p>
+      <button
+        onClick={dismiss}
+        aria-label="Cerrar aviso"
+        className="shrink-0 p-1 rounded text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark hover:bg-rule/50 dark:hover:bg-rule-dark/50 transition-colors"
+      >
+        <CloseIcon />
+      </button>
+    </div>
+  )
+}
+
+// Shared chrome for the alerts/export controls — border + hover-fill match the
+// existing rule/ink-muted gray tokens, same hover treatment as the theme-toggle
+// button in Navbar.tsx (hover:bg-rule/50).
+// flex-1 + justify-center: on mobile the two controls share their row at equal
+// width (an even pair instead of floating at opposite edges); on desktop the
+// portal slot sizes to content, so flex-1 is a no-op there.
+const ACTION_BUTTON_CLASS =
+  'flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3.5 py-2.5 rounded border border-rule dark:border-rule-dark ' +
+  'font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark ' +
+  'hover:text-ink dark:hover:text-ink-dark hover:bg-rule/50 dark:hover:bg-rule-dark/50 transition-colors whitespace-nowrap'
+
+// Alerts + export controls. Rendered inline on mobile (its usual spot in the
+// live-status bar) and via portal into the navbar's action slot on desktop —
+// see #navbar-feed-actions in Navbar.tsx. Same handlers, two render targets.
+function FeedActionButtons({
+  notifPermiso,
+  onActivar,
+  exportado,
+  onExportar,
+}: {
+  notifPermiso: NotificationPermission | 'unsupported'
+  onActivar: () => void
+  exportado: boolean
+  onExportar: () => void
+}) {
+  return (
+    <>
+      {notifPermiso === 'default' && (
+        <button onClick={onActivar} className={ACTION_BUTTON_CLASS}>
+          <BellIcon />
+          Activar alertas
+        </button>
+      )}
+      {notifPermiso === 'granted' && (
+        <span className={`${ACTION_BUTTON_CLASS} hover:bg-transparent dark:hover:bg-transparent hover:text-ink-muted dark:hover:text-ink-muted-dark cursor-default`}>
+          <BellIcon />
+          Alertas activas
+        </span>
+      )}
+      <button onClick={onExportar} className={ACTION_BUTTON_CLASS}>
+        {exportado ? '✓' : <ExportIcon />}
+        {exportado ? 'Copiado' : 'Exportar'}
+      </button>
+    </>
+  )
+}
+
 function EmptyState({ error, degraded }: { error?: boolean; degraded?: boolean }) {
   return (
     <div className="py-16 px-6 border border-rule dark:border-rule-dark border-l-[3px] border-l-[#CF1020] bg-panel dark:bg-panel-dark">
@@ -106,19 +219,22 @@ function ResumenEvento() {
         <span>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 mt-3">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6 items-center">
+          <div className="lg:col-span-8 grid grid-cols-2 gap-x-6 gap-y-4">
             {RESUMEN_DATOS.map(({ num, label, red }) => (
-              <div key={label}>
-                <p className={`font-mono text-xl font-bold ${red ? 'text-crisis-red' : 'text-ink dark:text-ink-dark'}`}>{num}</p>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark mt-0.5">{label}</p>
+              <div key={label} className="border-l-2 border-rule dark:border-rule-dark pl-4 py-1">
+                <p className={`font-mono text-xl sm:text-2xl font-bold ${red ? 'text-crisis-red' : 'text-ink dark:text-ink-dark'}`}>{num}</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark mt-0.5">{label}</p>
               </div>
             ))}
+            <p className="col-span-2 font-mono text-[10px] text-ink-muted dark:text-ink-muted-dark mt-2">
+              Cifras provisionales · 28 jun 2026 · Fuente: medios verificados
+            </p>
           </div>
-          <p className="font-mono text-[10px] text-ink-muted dark:text-ink-muted-dark mt-3">
-            Cifras provisionales · 28 jun 2026 · Fuente: medios verificados
-          </p>
-        </>
+          <div className="lg:col-span-4 w-full max-w-[375px] mx-auto">
+            <MapaVenezuelaSVG />
+          </div>
+        </div>
       )}
     </div>
   )
@@ -154,6 +270,8 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
   const notifPermisoRef = useRef<NotificationPermission | 'unsupported'>('default')
   // Feature 6: export feedback
   const [exportado, setExportado] = useState(false)
+  // Desktop portal target — the navbar's action slot, found after mount.
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -170,6 +288,10 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
     } else {
       setNotifPermiso(Notification.permission)
     }
+  }, [])
+
+  useEffect(() => {
+    setActionsSlot(document.getElementById('navbar-feed-actions'))
   }, [])
 
   useEffect(() => {
@@ -321,7 +443,7 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
   return (
     <>
       {/* Header compacto — una sola línea */}
-      <div className="border-b border-rule dark:border-rule-dark px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+      <div className="border-b border-rule dark:border-rule-dark px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-2 h-2 rounded-full bg-crisis-red animate-pulse shrink-0" />
           <span className="font-mono text-[11px] tracking-widest text-crisis-red uppercase shrink-0">En vivo</span>
@@ -330,35 +452,38 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
             Sismo Venezuela · 24 jun 2026
           </span>
         </div>
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center sm:justify-end gap-4 shrink-0">
           {statsLabel && (
             <span className="font-mono text-[11px] text-ink-muted dark:text-ink-muted-dark tracking-wide hidden sm:block tnum">
               {statsLabel}
             </span>
           )}
-          {/* Feature 5: notification button */}
-          {notifPermiso === 'default' && (
-            <button
-              onClick={() => Notification.requestPermission().then(p => setNotifPermiso(p))}
-              className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors"
-            >
-              🔔 Activar alertas
-            </button>
-          )}
-          {notifPermiso === 'granted' && (
-            <span className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark">
-              🔔 Alertas activas
-            </span>
-          )}
-          {/* Feature 6: export button */}
-          <button
-            onClick={handleExportar}
-            className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors"
-          >
-            {exportado ? '✓ Copiado' : 'Exportar'}
-          </button>
+          {/* Mobile fallback — on desktop these render inside the navbar instead
+              (see #navbar-feed-actions portal below). The outer bar stacks to its
+              own row on mobile (flex-col), so this gets clean breathing room
+              instead of wrapping awkwardly under the live-status line. */}
+          <div className="sm:hidden flex items-center gap-3 w-full">
+            <FeedActionButtons
+              notifPermiso={notifPermiso}
+              onActivar={() => Notification.requestPermission().then(p => setNotifPermiso(p))}
+              exportado={exportado}
+              onExportar={handleExportar}
+            />
+          </div>
         </div>
       </div>
+
+      {actionsSlot && createPortal(
+        <FeedActionButtons
+          notifPermiso={notifPermiso}
+          onActivar={() => Notification.requestPermission().then(p => setNotifPermiso(p))}
+          exportado={exportado}
+          onExportar={handleExportar}
+        />,
+        actionsSlot
+      )}
+
+      <HintAcciones />
 
       {/* Barra de filtros */}
       <div className="border-b border-rule dark:border-rule-dark px-4 sm:px-6 pt-3">
@@ -372,13 +497,20 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
                 <button
                   key={key}
                   onClick={() => setTagActivo(key)}
-                  className={`font-mono text-[10px] uppercase tracking-widest shrink-0 pb-2.5 border-b-2 transition-colors ${
+                  className={`relative font-mono text-[10px] uppercase tracking-widest shrink-0 pb-2.5 transition-colors ${
                     active
-                      ? `border-crisis-red ${text}`
-                      : 'border-transparent text-ink-muted dark:text-ink-muted-dark hover:text-[#999]'
+                      ? text
+                      : 'text-ink-muted dark:text-ink-muted-dark hover:text-[#999]'
                   }`}
                 >
                   {short}
+                  {active && (
+                    <motion.span
+                      layoutId="feed-tag-underline"
+                      className="absolute left-0 right-0 -bottom-px h-0.5 bg-crisis-red"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
                 </button>
               )
             })}
@@ -427,26 +559,39 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
         )}
 
         {/* Banner nuevas noticias */}
-        {nuevasCount > 0 && (
-          <button
-            onClick={() => { setNuevasCount(0); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-            className="w-full mb-4 py-2 font-mono text-[11px] uppercase tracking-widest text-white bg-crisis-red hover:bg-crisis-red-dark transition-colors flex items-center justify-center gap-2"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            {nuevasCount} nuevo{nuevasCount > 1 ? 's' : ''} reporte{nuevasCount > 1 ? 's' : ''} — ver arriba
-          </button>
-        )}
+        <AnimatePresence>
+          {nuevasCount > 0 && (
+            <motion.button
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              onClick={() => { setNuevasCount(0); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              className="w-full overflow-hidden py-2 font-mono text-[11px] uppercase tracking-widest text-white bg-crisis-red hover:bg-crisis-red-dark transition-colors flex items-center justify-center gap-2"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              {nuevasCount} nuevo{nuevasCount > 1 ? 's' : ''} reporte{nuevasCount > 1 ? 's' : ''} — ver arriba
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {error && <EmptyState error />}
 
         {/* Grid de cards */}
         {cargando ? (
+          // Mirrors the real card (header row + title + description) so the grid
+          // doesn't reflow when the feed arrives.
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark border-l-[3px] border-l-[#333] p-4 animate-pulse">
-                <div className="h-2.5 w-20 bg-[#2A2A2A] mb-3" />
-                <div className="h-5 w-full bg-[#2A2A2A] mb-2" />
-                <div className="h-4 w-3/4 bg-[#2A2A2A]" />
+              <div key={i} className="bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark border-l-[3px] p-4">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="h-2.5 w-16 rounded skeleton" />
+                  <div className="h-2.5 w-24 rounded skeleton" />
+                </div>
+                <div className="h-4 w-full rounded skeleton mb-2" />
+                <div className="h-4 w-4/5 rounded skeleton mb-3" />
+                <div className="h-3 w-full rounded skeleton mb-1.5" />
+                <div className="h-3 w-2/3 rounded skeleton" />
               </div>
             ))}
           </div>
@@ -455,14 +600,19 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {noticias.map(n => {
+              <AnimatePresence initial={false}>
+              {noticias.map((n, i) => {
                 const meta = TAG_META[n.tag]
                 return (
-                  <a
+                  <motion.a
                     key={n.id}
                     href={n.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0, transition: { delay: Math.min(i, 8) * 0.03 } }}
+                    exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
                     className={`
                       group block bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark rounded-none
                       border-l-[3px] ${meta?.border ?? 'border-l-[#444]'}
@@ -543,9 +693,10 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
                         {copiadoId === n.id ? '✓' : '🔗'}
                       </button>
                     </div>
-                  </a>
+                  </motion.a>
                 )
               })}
+              </AnimatePresence>
             </div>
 
             {/* Sentinel de infinite scroll */}
@@ -562,8 +713,15 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
       </div>
 
       {/* Feature 3: toast de réplica (fixed) */}
-      {replicaToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-md bg-[#EAB308] animate-fade-in">
+      <AnimatePresence>
+        {replicaToast && (
+        <motion.div
+          initial={{ opacity: 0, y: 24, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={{ opacity: 0, y: 24, x: '-50%' }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          className="fixed bottom-24 left-1/2 z-50 w-[90vw] max-w-md bg-[#EAB308]"
+        >
           <div className="flex items-start justify-between gap-3 p-3">
             <div className="min-w-0">
               <p className="font-mono text-[11px] uppercase tracking-widest font-bold text-black">
@@ -580,8 +738,9 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
               ✕
             </button>
           </div>
-        </div>
-      )}
+        </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
