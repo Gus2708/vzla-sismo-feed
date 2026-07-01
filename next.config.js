@@ -73,9 +73,14 @@ const withPWA = require('next-pwa')({
 // unsafe-inline por ahora y se compensa con el resto de las directivas.
 // style-src necesita 'unsafe-inline': framer-motion aplica animaciones via
 // atributo style="" inline en cada render.
+const isDev = process.env.NODE_ENV === 'development'
+
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // 'unsafe-eval' is required in development: Next.js webpack runtime uses eval() for
+  // source maps and Fast Refresh. Without it, React cannot execute state updates in dev mode.
+  // In production, Next.js uses static chunks — no eval() needed.
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
