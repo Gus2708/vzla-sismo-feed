@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { AnimatePresence, motion } from 'framer-motion'
 
 // Signature motif: a small seismogram trace. Used in the masthead and hero.
 function Seismograph({ className = '' }: { className?: string }) {
@@ -75,7 +76,7 @@ export function Navbar() {
       <div className="h-1 bg-crisis-red" />
 
       <div className="border-b border-rule dark:border-rule-dark">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-6">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center gap-5 lg:gap-8">
           {/* Nameplate */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
             <Seismograph className="w-9 h-5 text-crisis-red shrink-0" />
@@ -89,8 +90,12 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav — editorial uppercase, underline active state */}
-          <nav className="hidden sm:flex items-center gap-7">
+          <span className="hidden sm:block h-6 w-px bg-rule dark:bg-rule-dark shrink-0" aria-hidden="true" />
+
+          {/* Desktop nav — editorial uppercase, underline active state. Anchored next to
+              the nameplate rather than floated to center; keeps the bar from reading empty
+              on wide viewports. */}
+          <nav className="hidden sm:flex items-center gap-7 shrink-0">
             {links.map(l => {
               const active = pathname === l.href
               return (
@@ -105,53 +110,80 @@ export function Navbar() {
                   aria-current={active ? 'page' : undefined}
                 >
                   {l.label}
-                  {active && <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-crisis-red" />}
+                  {active && (
+                    <motion.span
+                      layoutId="navbar-active-underline"
+                      className="absolute left-0 right-0 -bottom-px h-0.5 bg-crisis-red"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
                 </Link>
               )
             })}
           </nav>
 
-          <div className="flex items-center gap-1">
-            <button
+          <div className="flex-1" />
+
+          {/* Portal target: page-level actions (alerts / export) render here on desktop.
+              Populated by FeedNoticias when mounted; stays empty (and invisible) on pages
+              that don't have feed actions, like /mapa and /stats. */}
+          <div id="navbar-feed-actions" className="hidden sm:flex items-center gap-5 shrink-0" />
+
+          <span className="hidden sm:block h-6 w-px bg-rule dark:bg-rule-dark shrink-0" aria-hidden="true" />
+
+          <div className="flex items-center gap-1 shrink-0">
+            <motion.button
               onClick={toggleDark}
               aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               className="p-2 rounded text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark hover:bg-rule/50 dark:hover:bg-rule-dark/50 transition-colors"
+              whileTap={{ scale: 0.85, rotate: 15 }}
             >
               <ThemeIcon dark={dark} />
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               className="sm:hidden p-2 rounded text-ink-muted dark:text-ink-muted-dark hover:text-ink dark:hover:text-ink-dark"
               onClick={() => setMenuOpen(o => !o)}
               aria-expanded={menuOpen}
               aria-label="Menú"
+              whileTap={{ scale: 0.85 }}
             >
               <MenuIcon open={menuOpen} />
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {menuOpen && (
-        <div className="sm:hidden border-b border-rule dark:border-rule-dark bg-paper dark:bg-paper-dark px-4 py-2">
-          {links.map(l => {
-            const active = pathname === l.href
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMenuOpen(false)}
-                className={`flex items-center text-eyebrow uppercase py-3 border-b border-rule/60 dark:border-rule-dark/60 last:border-0 ${
-                  active ? 'text-crisis-red' : 'text-ink-muted dark:text-ink-muted-dark'
-                }`}
-                aria-current={active ? 'page' : undefined}
-              >
-                {l.label}
-              </Link>
-            )
-          })}
-        </div>
-      )}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            className="sm:hidden border-b border-rule dark:border-rule-dark bg-paper dark:bg-paper-dark px-4 overflow-hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <div className="py-2">
+              {links.map(l => {
+                const active = pathname === l.href
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center text-eyebrow uppercase py-3 border-b border-rule/60 dark:border-rule-dark/60 last:border-0 ${
+                      active ? 'text-crisis-red' : 'text-ink-muted dark:text-ink-muted-dark'
+                    }`}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    {l.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }
