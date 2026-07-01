@@ -356,13 +356,15 @@
     - Unificación de los colores de categorías con `FeedNoticias.tsx` y refinamiento de la tabla de distribución (barras más delgadas de 4px de altura, rectangulares y con hover interactivo).
   - Corrección de contrastes WCAG AA (>=4.5:1) en textos secundarios sobre fondo paper en todas las páginas.
   - **Botón y modal de emergencias**: Rediseño de UI/UX del botón flotante (FAB) y del modal del directorio telefónico usando tokens semánticos oficiales y transiciones fluidas de `framer-motion` (deslizamiento bottom-sheet en móviles, fade-scale en desktop, scroll lock y soporte de tecla Escape para cerrar).
-  - **Corrección de Regresión en Controles e Hydration**: Solucionado un problema de sincronía en la hidratación (race condition) de Next.js que causaba que el portal de botones de la Navbar (`id="navbar-feed-actions"`) se inicializara en `null` en desktop (ocultando los botones de alertas y exportar). Asimismo, se resguardó el renderizado del FAB de emergencias en el cliente para prevenir discrepancias de hidratación con las animaciones de Framer Motion.
+  - **Corrección de Regresión en Controles e Hydration**: Eliminado de forma definitiva el React Portal de la barra de acciones de la Navbar (que dependía de buscar el nodo en el DOM con `getElementById` y fallaba al hidratarse asincrónicamente). Ahora la `Navbar.tsx` renderiza las acciones de alertas y exportar directamente cuando `pathname === '/'`. La comunicación y el intercambio de estados se manejan de manera reactiva y desacoplada mediante Custom Events nativos del navegador (`action:exportar` y `action:exportado-exito`).
+  - **Simplificación del FAB de Emergencias**: Reemplazado el componente animado de Framer Motion por un botón HTML estándar con transiciones e interacciones CSS de Tailwind, garantizando que el navegador lo dibuje al instante y mitigando cualquier riesgo de fallas en el montaje inicial del motor de animación bajo SSR que pudiese ocultar el botón.
   - **Resolución de Conflicto en Puerto 3000**: Detectado y finalizado un proceso huérfano de Node (PID 29416) que mantenía ocupado el puerto 3000 sirviendo una caché de código desactualizada. Se relanzó el servidor local de desarrollo (`npm run dev`) de forma limpia en el puerto 3000.
 - Verification:
   - Compilación limpia de producción y análisis de tipos pasados con éxito (`npm run build`).
   - Servidor de desarrollo relanzado con éxito tras purgado de caché y respondiendo con código 200 en `/api/feed`.
-  - Integridad verificada del nuevo componente animado `NumerosEmergencia.tsx` y el portal de la Navbar.
+  - Integridad verificada de los botones nativos y la comunicación de eventos.
 - Commits:
+  - `8000ad5` fix(ui): refactor actions and FAB to direct rendering to resolve hydration issues
   - `936994a` fix(ui): resolve hydration mismatch and timing issues for emergency fab and action portal
   - `f0e824d` feat(ui): redesign emergency button and modal directory UI/UX
   - `6303c33` feat(donar): improve ui-ux and establish design system
