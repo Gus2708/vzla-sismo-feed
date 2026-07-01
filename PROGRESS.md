@@ -10,9 +10,22 @@
 - Agent skills installed at project scope (`./.agents/skills/`, gitignored; `skills-lock.json` tracked). See Session 002.
 - Frontend visual refresh applied on `feat/agent-skills-frontend`. See Session 003.
 - Map UI/UX improvements (interactive legend magnitude filter, state filter, details card, 3D skeleton loading/guide) completed on `master`. See Session 010.
+- Dropdown select contrast accessibility fix in dark mode completed on `master`. See Session 011.
 - Current blocker: none for the verification harness. Local Supabase not provisioned (`.env.local` uses placeholders so dev server boots without a real DB; API routes now return fast degraded-mode empty responses in local dev).
 
 ## Session Log
+
+### Session 011 — 2026-07-01
+- Date: 2026-07-01
+- Goal: resolver el problema de contraste en los menús desplegables (`<select>`) en modo oscuro donde las opciones nativas se renderizaban con texto claro sobre fondo claro.
+- Completed:
+  - Agregado `color-scheme: light` a `:root` y `color-scheme: dark` a `.dark` en [globals.css](file:///g:/Projects/vzla-sismo-feed/src/app/globals.css) para forzar al navegador a renderizar los desplegables nativos con el tema de color correcto del sistema.
+  - Añadido estilos explícitos para elementos `<option>` tanto en modo claro como en modo oscuro en [globals.css](file:///g:/Projects/vzla-sismo-feed/src/app/globals.css).
+  - Aplicadas clases de Tailwind CSS (`bg-panel dark:bg-panel-dark text-ink dark:text-ink-dark`) a los elementos `<option>` en [FeedNoticias.tsx](file:///g:/Projects/vzla-sismo-feed/src/components/FeedNoticias.tsx) y [MapaSismos.tsx](file:///g:/Projects/vzla-sismo-feed/src/components/MapaSismos.tsx).
+- Verification:
+  - `npx tsc --noEmit` y `npm run build` completados con éxito.
+- Commits:
+  - `1244e25` fix(frontend): resolve contrast accessibility issue in select dropdowns
 
 ### Session 010 — 2026-07-01
 - Date: 2026-07-01
