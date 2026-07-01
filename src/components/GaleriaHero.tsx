@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import NextImage from 'next/image'
 import { motion } from 'framer-motion'
 
-interface NoticiaGaleria {
+export interface NoticiaGaleria {
   id: string
   titulo: string
   descripcion: string | null
@@ -15,20 +15,9 @@ interface NoticiaGaleria {
   imagen_url: string  // guaranteed non-null by .not('imagen_url','is',null) + empty-string filter in ingest
 }
 
-export default function GaleriaHero() {
-  const [noticias, setNoticias] = useState<NoticiaGaleria[]>([])
-  const [cargando, setCargando] = useState(true)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch('/api/feed?galeria=true', { signal: controller.signal })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => setNoticias(data.noticias ?? []))
-      .catch(() => {})
-      .finally(() => setCargando(false))
-    return () => controller.abort()
-  }, [])
-
+// Presentational only — `noticias` is a slice of the shared FeedNoticias pool
+// (galería → portada → curadas → feed), so nothing repeats across the sections.
+export default function GaleriaHero({ noticias, cargando }: { noticias: NoticiaGaleria[]; cargando: boolean }) {
   if (!cargando && noticias.length === 0) return null
 
   return (

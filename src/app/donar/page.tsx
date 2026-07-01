@@ -264,7 +264,7 @@ export default function DonarPage() {
         {imgOk && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src="https://commons.wikimedia.org/wiki/Special:FilePath/GuLong_canned_food_on_the_shelf.jpg"
+            src="/images/donar-hero.jpg"
             alt=""
             className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-[1.02] dark:brightness-50 opacity-15 dark:opacity-25"
             onError={() => setImgOk(false)}

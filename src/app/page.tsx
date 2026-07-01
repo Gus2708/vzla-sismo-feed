@@ -1,9 +1,6 @@
-import nextDynamic from 'next/dynamic'
 import { FeedNoticias } from '@/components/FeedNoticias'
 
 export const dynamic = 'force-dynamic'
-
-const GaleriaHero = nextDynamic(() => import('@/components/GaleriaHero'), { ssr: false })
 
 export default async function Page() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,10 +15,5 @@ export default async function Page() {
   } catch {
     // fail silently — el cliente carga el feed por su cuenta
   }
-  return (
-    <>
-      <GaleriaHero />
-      <FeedNoticias initialData={initialData} />
-    </>
-  )
+  return <FeedNoticias initialData={initialData} />
 }

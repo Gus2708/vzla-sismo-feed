@@ -84,7 +84,10 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://earthquake.usgs.gov https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://earthquake.usgs.gov https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.arcgis.com https://*.arcgisonline.com",
+  // Allow the ArcGIS WebScene iframe (arcgis.com) to be embedded
+  "frame-src https://www.arcgis.com https://*.arcgis.com",
+  "child-src https://www.arcgis.com https://*.arcgis.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

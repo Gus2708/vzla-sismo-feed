@@ -5,6 +5,7 @@ import NextImage from 'next/image'
 import { createClient } from '@supabase/supabase-js'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MapaVenezuelaSVG } from './MapaVenezuelaSVG'
+import GaleriaHero, { type NoticiaGaleria } from './GaleriaHero'
 
 type Noticia = {
   id: string
@@ -98,6 +99,86 @@ function fuenteLabel(tipo: string, fuente: string) {
   if (tipo === 'x_twitter') return `@${fuente.replace(/^@/, '')}`
   if (tipo === 'oficial') return fuente
   return fuente
+}
+
+// Oval "pill" badge per category — muted, ink-like hues (bg = 10% tint, fg = a
+// darker/lighter shade of the same hue for light/dark surfaces) so the categories
+// read as one cohesive editorial palette. Same look as the production base.
+const TAG_PILL: Record<string, { bg: string; fg: string }> = {
+  todos:             { bg: 'bg-ink-muted/10', fg: 'text-ink-muted dark:text-ink-muted-dark' },
+  sismo:             { bg: 'bg-[#CF1020]/10', fg: 'text-[#8A0E15] dark:text-[#F09595]' },
+  rescate:           { bg: 'bg-[#6B3A52]/10', fg: 'text-[#4A2839] dark:text-[#D9A8BE]' },
+  desaparecidos:     { bg: 'bg-[#B5502E]/10', fg: 'text-[#7A3720] dark:text-[#E3A98D]' },
+  puntos_acopio:     { bg: 'bg-[#5C7A4A]/10', fg: 'text-[#3F5433] dark:text-[#B8CBA8]' },
+  ayuda_humanitaria: { bg: 'bg-[#3D5A73]/10', fg: 'text-[#2A3F50] dark:text-[#A9C1D2]' },
+  replicas:          { bg: 'bg-[#A67C2E]/10', fg: 'text-[#755720] dark:text-[#E0C48C]' },
+  donaciones:        { bg: 'bg-[#3E7C6E]/10', fg: 'text-[#2B564C] dark:text-[#A6D2C5]' },
+  internacional:     { bg: 'bg-[#8A8378]/10', fg: 'text-[#5F5A52] dark:text-[#D9D4C9]' },
+}
+
+function TagPill({ tag }: { tag: string }) {
+  const pill = TAG_PILL[tag]
+  const meta = TAG_META[tag]
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide shrink-0 ${pill?.bg ?? 'bg-ink-muted/10'} ${pill?.fg ?? 'text-ink-muted dark:text-ink-muted-dark'}`}>
+      {meta?.short ?? tag}
+    </span>
+  )
+}
+
+// A curated category block, sized by importance: a lead story with a medium
+// image, then a column of secondary stories with small thumbnails. "Ver todas"
+// filters the full boletín below to this tag.
+function CuratedSection({
+  titulo, dotColor, items, onVerTodas,
+}: { titulo: string; dotColor: string; items: Noticia[]; onVerTodas: () => void }) {
+  const [destacada, ...resto] = items
+  if (!destacada) return null
+  return (
+    <section className="px-4 sm:px-6 py-6 border-b border-rule dark:border-rule-dark">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="font-serif font-semibold text-xl flex items-center gap-2.5 text-ink dark:text-ink-dark">
+          <span className={`w-2 h-2 rounded-full ${dotColor}`} aria-hidden="true" />
+          {titulo}
+        </h2>
+        <button onClick={onVerTodas} className="font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark hover:text-crisis-red transition-colors">
+          Ver todas →
+        </button>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-start">
+        {/* Lead — importancia alta: imagen mediana */}
+        <a href={destacada.url} target="_blank" rel="noopener noreferrer" className="lg:col-span-5 group block">
+          {destacada.imagen_url && (
+            <div className="relative aspect-[16/10] w-full overflow-hidden bg-panel dark:bg-panel-dark mb-3">
+              <NextImage src={destacada.imagen_url} alt={destacada.titulo} fill unoptimized referrerPolicy="no-referrer" className="object-cover" />
+            </div>
+          )}
+          <TagPill tag={destacada.tag} />
+          <h3 className="font-serif font-semibold text-lg leading-snug mt-2 group-hover:text-crisis-red transition-colors">{destacada.titulo}</h3>
+          <p className="font-mono text-xs text-ink-muted dark:text-ink-muted-dark mt-2">{fuenteLabel(destacada.fuente_tipo, destacada.fuente)} · {tiempoRelativo(destacada.publicado_at)}</p>
+        </a>
+        {/* Secundarias — importancia menor: miniaturas chicas */}
+        {resto.length > 0 && (
+          <div className="lg:col-span-7 flex flex-col">
+            {resto.map(n => (
+              <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="group flex gap-3.5 py-3 border-b border-rule dark:border-rule-dark last:border-0 last:pb-0">
+                {n.imagen_url && (
+                  <div className="relative w-24 sm:w-28 aspect-[4/3] shrink-0 overflow-hidden bg-panel dark:bg-panel-dark rounded-sm">
+                    <NextImage src={n.imagen_url} alt={n.titulo} fill unoptimized referrerPolicy="no-referrer" className="object-cover" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <TagPill tag={n.tag} />
+                  <h4 className="font-serif font-semibold text-[0.95rem] leading-snug mt-1.5 group-hover:text-crisis-red transition-colors line-clamp-2">{n.titulo}</h4>
+                  <p className="font-mono text-[10px] text-ink-muted dark:text-ink-muted-dark mt-1 truncate">{fuenteLabel(n.fuente_tipo, n.fuente)} · {tiempoRelativo(n.publicado_at)}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
 }
 
 // Share controls (WhatsApp · Telegram · copy link) shared by both card
@@ -432,6 +513,13 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
   const [statsLabel, setStatsLabel] = useState<string>('')
   const [cifras, setCifras] = useState<CifrasStats | null>(null)
 
+  // Portada pool — an unfiltered first load that feeds the photo gallery, the
+  // cover package and the curated sections (each consuming/deduping its IDs
+  // before handing the rest to the next), kept separate from the filterable
+  // `noticias` grid below so the cover stays stable while the feed is filtered.
+  const [destacadas, setDestacadas] = useState<Noticia[]>(initialData ?? [])
+  const [destacadasCargando, setDestacadasCargando] = useState(!initialData?.length)
+
   // Feature 1: copy feedback per card
   const [copiadoId, setCopiadoId] = useState<string | null>(null)
   // Cards whose imagen_url failed to load — they fall back to the text layout.
@@ -446,7 +534,8 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
   // Desktop portal target — the navbar's action slot, found after mount.
   const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
 
-  const sentinelRef = useRef<HTMLDivElement>(null)
+  const cargarMasRef = useRef<() => void>(() => {})
+  const filtroRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isNewTimers = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -535,21 +624,41 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
 
   useEffect(() => { cargar(tagActivo, query) }, [tagActivo, query, idiomaActivo, zonaActiva, cargar])
 
+  // One-time unfiltered load that seeds the cover pool (gallery + portada +
+  // curated). It stays fixed as the user filters the boletín below.
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/feed?limit=50', { signal: controller.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.noticias?.length) setDestacadas(data.noticias) })
+      .catch(() => { /* keep whatever initialData/SSR already gave us */ })
+      .finally(() => setDestacadasCargando(false))
+    return () => controller.abort()
+  }, [])
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => setQuery(queryInput.trim()), 400)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [queryInput])
 
-  useEffect(() => {
-    if (observerRef.current) observerRef.current.disconnect()
-    if (!hasMore) return
+  // Keep the latest cargarMas in a ref so the sentinel's observer always calls
+  // the current one without having to be torn down and recreated.
+  useEffect(() => { cargarMasRef.current = cargarMas }, [cargarMas])
+
+  // Callback ref: (re)attach the IntersectionObserver whenever the sentinel node
+  // mounts or remounts. The feed (and sentinel) unmounts during `cargando`, so a
+  // one-shot effect would keep observing a stale, detached node and never fire —
+  // this re-observes the fresh node every time it appears. cargarMas self-guards
+  // on `hasMore`/`cargandoMas`, so firing past the end is a harmless no-op.
+  const setSentinel = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect()
+    if (!node) return
     observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) cargarMas()
+      if (entries[0].isIntersecting) cargarMasRef.current()
     }, { rootMargin: '200px' })
-    if (sentinelRef.current) observerRef.current.observe(sentinelRef.current)
-    return () => observerRef.current?.disconnect()
-  }, [cargarMas, hasMore])
+    observerRef.current.observe(node)
+  }, [])
 
   useEffect(() => {
     const channel = supabase
@@ -635,8 +744,88 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
 
   const tagList = Object.entries(TAG_META)
 
+  // Single pool feeds gallery → cover → curated, each consuming its IDs so a
+  // story never repeats across the sections above the boletín.
+  const conImagen = destacadas.filter(n => n.imagen_url)
+  const galeria = conImagen.slice(0, 8)
+  const idsGaleria = new Set(galeria.map(n => n.id))
+  const restoDespuesGaleria = destacadas.filter(n => !idsGaleria.has(n.id))
+
+  const heroPrincipal = restoDespuesGaleria[0]
+  const heroSecundarias = restoDespuesGaleria.slice(1, 3)
+  const idsHero = new Set([heroPrincipal?.id, ...heroSecundarias.map(n => n.id)].filter(Boolean))
+  const restoDespuesHero = restoDespuesGaleria.filter(n => !idsHero.has(n.id))
+
+  const sismoPreview = restoDespuesHero.filter(n => n.tag === 'sismo').slice(0, 4)
+  const rescatePreview = restoDespuesHero.filter(n => n.tag === 'rescate' || n.tag === 'ayuda_humanitaria').slice(0, 4)
+
+  // "Ver todas" filters the boletín below to the section's tag and scrolls to it.
+  const verTodas = (tag: string) => {
+    setTagActivo(tag)
+    filtroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <>
+      <GaleriaHero
+        noticias={galeria as NoticiaGaleria[]}
+        cargando={destacadasCargando && destacadas.length === 0}
+      />
+
+      {/* Paquete de portada — nota principal + secundarias, estilo revista. Se
+          arma con el pool sin filtrar; el grid filtrable de abajo sigue siendo la
+          única fuente de datos y de paginación del boletín. */}
+      {heroPrincipal && (
+        <section className="px-4 sm:px-6 py-6 border-b border-rule dark:border-rule-dark">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-start">
+            {/* Nota principal — importancia máxima: imagen mediana + titular */}
+            <a href={heroPrincipal.url} target="_blank" rel="noopener noreferrer" className="lg:col-span-6 group block">
+              {heroPrincipal.imagen_url && (
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-panel dark:bg-panel-dark mb-3.5">
+                  <NextImage src={heroPrincipal.imagen_url} alt={heroPrincipal.titulo} fill unoptimized priority referrerPolicy="no-referrer" className="object-cover" />
+                </div>
+              )}
+              <TagPill tag={heroPrincipal.tag} />
+              <h1 className="font-serif font-semibold text-display text-ink dark:text-ink-dark mt-2.5 group-hover:text-crisis-red transition-colors">
+                {heroPrincipal.titulo}
+              </h1>
+              {heroPrincipal.descripcion && (
+                <p className="text-small text-ink-muted dark:text-ink-muted-dark mt-2.5 max-w-prose line-clamp-2">{heroPrincipal.descripcion}</p>
+              )}
+              <p className="font-mono text-xs text-ink-muted dark:text-ink-muted-dark mt-2.5">
+                {fuenteLabel(heroPrincipal.fuente_tipo, heroPrincipal.fuente)} · {tiempoRelativo(heroPrincipal.publicado_at)}
+              </p>
+            </a>
+            {/* Secundarias — importancia media: imágenes chicas en grid */}
+            {heroSecundarias.length > 0 && (
+              <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {heroSecundarias.map(n => (
+                  <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="group block">
+                    {n.imagen_url && (
+                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-panel dark:bg-panel-dark mb-2.5 rounded-sm">
+                        <NextImage src={n.imagen_url} alt={n.titulo} fill unoptimized referrerPolicy="no-referrer" className="object-cover" />
+                      </div>
+                    )}
+                    <TagPill tag={n.tag} />
+                    <h3 className="font-serif font-semibold text-[1rem] leading-snug mt-1.5 group-hover:text-crisis-red transition-colors line-clamp-3">{n.titulo}</h3>
+                    <p className="font-mono text-[11px] text-ink-muted dark:text-ink-muted-dark mt-1">
+                      {fuenteLabel(n.fuente_tipo, n.fuente)} · {tiempoRelativo(n.publicado_at)}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {sismoPreview.length > 0 && (
+        <CuratedSection titulo="Sismo" dotColor="bg-[#CF1020]" items={sismoPreview} onVerTodas={() => verTodas('sismo')} />
+      )}
+      {rescatePreview.length > 0 && (
+        <CuratedSection titulo="Rescate y ayuda humanitaria" dotColor="bg-[#6B3A52]" items={rescatePreview} onVerTodas={() => verTodas('rescate')} />
+      )}
+
       {/* Header compacto — una sola línea */}
       <div className="border-b border-rule dark:border-rule-dark px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -671,8 +860,10 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
 
       <HintAcciones />
 
+      <h2 className="font-serif font-semibold text-xl text-ink dark:text-ink-dark px-4 sm:px-6 pt-6 scroll-mt-20">Boletín completo</h2>
+
       {/* Barra de filtros */}
-      <div className="border-b border-rule dark:border-rule-dark px-4 sm:px-6 pt-3">
+      <div ref={filtroRef} className="border-b border-rule dark:border-rule-dark px-4 sm:px-6 pt-3">
         {/* Row 1: tags + idioma */}
         <div className="flex items-end gap-4">
           {/* Scroll horizontal de categorías */}
@@ -894,7 +1085,7 @@ export function FeedNoticias({ initialData }: { initialData?: Noticia[] }) {
             </div>
 
             {/* Sentinel de infinite scroll */}
-            <div ref={sentinelRef} className="py-8 text-center">
+            <div ref={setSentinel} className="py-8 text-center">
               {cargandoMas && (
                 <div className="inline-block w-4 h-4 border border-rule dark:border-rule-dark border-t-crisis-red rounded-full animate-spin" />
               )}

@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
 const TAG_COLORS: Record<string, string> = {
   sismo: '#CF1020',
   rescate: '#F97316',
@@ -20,6 +24,23 @@ const TAG_META: Record<string, { label: string }> = {
   internacional:     { label: 'Internacional' },
 }
 
+type Stats = {
+  total_aprobadas: number
+  por_tag: Record<string, number>
+  ultima_at: string | null
+  cifras: {
+    muertos: number | null
+    muertos_at: string | null
+    muertos_fuente: string | null
+    heridos: number | null
+    heridos_at: string | null
+    heridos_fuente: string | null
+    desaparecidos: number | null
+    desaparecidos_at: string | null
+    desaparecidos_fuente: string | null
+  } | null
+}
+
 function tiempoRelativo(iso: string | null): string {
   if (!iso) return '—'
   const diff = Date.now() - new Date(iso).getTime()
@@ -31,41 +52,94 @@ function tiempoRelativo(iso: string | null): string {
   return `hace ${Math.floor(h / 24)}d`
 }
 
-export const dynamic = 'force-dynamic'
+// Pure-CSS donut (conic-gradient) so the category mix reads at a glance instead
+// of as a column of numbers — no charting library needed for one ring. Uses the
+// same TAG_COLORS dots as the section table below so both read as one palette.
+function DonaCategorias({ porTag, total }: { porTag: Record<string, number>; total: number }) {
+  const entries = Object.entries(TAG_META).map(([tag, { label }]) => ({
+    tag,
+    label,
+    hex: TAG_COLORS[tag] ?? '#94A3B8',
+    count: porTag[tag] ?? 0,
+  }))
+  let acc = 0
+  const stops = entries.map(({ hex, count }) => {
+    const pct = total > 0 ? (count / total) * 100 : 0
+    const start = acc
+    acc += pct
+    return `${hex} ${start}% ${acc}%`
+  })
+  const gradient = total > 0 ? `conic-gradient(${stops.join(', ')})` : 'conic-gradient(#9CA3AF 0% 100%)'
 
-export default async function StatsPage() {
-  let stats = {
-    total_aprobadas: 0,
-    por_tag: {} as Record<string, number>,
-    ultima_at: null as string | null,
-    cifras: null as {
-      muertos: number | null
-      muertos_at: string | null
-      muertos_fuente: string | null
-      heridos: number | null
-      heridos_at: string | null
-      heridos_fuente: string | null
-      desaparecidos: number | null
-      desaparecidos_at: string | null
-      desaparecidos_fuente: string | null
-    } | null
-  }
+  return (
+    <div className="flex items-center gap-8 flex-wrap">
+      <div
+        className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full shrink-0"
+        style={{ background: gradient }}
+        role="img"
+        aria-label="Distribución de reportes por categoría"
+      >
+        <div className="absolute inset-[18%] rounded-full bg-paper dark:bg-paper-dark flex flex-col items-center justify-center">
+          <span className="font-serif text-2xl font-semibold tnum text-ink dark:text-ink-dark">{total}</span>
+          <span className="text-[9px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark">reportes</span>
+        </div>
+      </div>
+      <ul className="flex-1 min-w-[220px] grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+        {entries.filter(e => e.count > 0).map(({ tag, label, hex, count }) => (
+          <li key={tag} className="flex items-center justify-between gap-3 text-small">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: hex }} aria-hidden="true" />
+              <span className="truncate text-ink dark:text-ink-dark">{label}</span>
+            </span>
+            <span className="font-mono text-ink-muted dark:text-ink-muted-dark tnum shrink-0">
+              {count} · {total > 0 ? Math.round((count / total) * 100) : 0}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
-  try {
-    const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-    const res = await fetch(`${base}/api/stats`, { cache: 'no-store' })
-    if (res.ok) stats = await res.json()
-  } catch { /* fail silently */ }
+export default function StatsPage() {
+  const [stats, setStats] = useState<Stats | null>(null)
+  // tick forces the "hace Xm" labels to re-render between fetches
+  const [tick, setTick] = useState(0)
 
-  const maxTag = Math.max(...Object.values(stats.por_tag), 1)
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/stats', { cache: 'no-store', signal: controller.signal })
+        if (res.ok) setStats(await res.json())
+      } catch { /* keep last known good stats */ }
+    }
+    load()
+    const refreshId = setInterval(load, 30_000)
+    const tickId = setInterval(() => setTick(t => t + 1), 30_000)
+    return () => { controller.abort(); clearInterval(refreshId); clearInterval(tickId) }
+  }, [])
+  void tick // referenced only to trigger periodic re-render of relative timestamps
+
+  const total = stats?.total_aprobadas ?? 0
+  const porTag = stats?.por_tag ?? {}
+  const cifras = stats?.cifras ?? null
+  const ultimaAt = stats?.ultima_at ?? null
+  const maxTag = Math.max(...Object.values(porTag), 1)
   const tagEntries = Object.entries(TAG_META)
 
   return (
     <main className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 py-12 lg:py-16">
       {/* Header */}
       <header className="border-b border-rule dark:border-rule-dark pb-6 mb-10">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-crisis-red mb-3 font-semibold">
-          Monitoreo e Indicadores
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-crisis-red mb-3 font-semibold">
+            Monitoreo e Indicadores
+          </div>
+          <div className="flex items-center gap-2 shrink-0 font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-ink-muted-dark">
+            <span className={`w-1.5 h-1.5 rounded-full bg-crisis-red ${stats ? 'animate-pulse' : ''}`} />
+            Actualiza solo · última {tiempoRelativo(ultimaAt)}
+          </div>
         </div>
         <h1 className="font-serif text-hero lg:text-masthead text-ink dark:text-ink-dark leading-none">
           Reportes verificados por sección
@@ -76,7 +150,7 @@ export default async function StatsPage() {
       </header>
 
       {/* Balance de víctimas (si existen cifras cargadas) */}
-      {stats.cifras && (stats.cifras.muertos !== null || stats.cifras.heridos !== null || stats.cifras.desaparecidos !== null) && (
+      {cifras && (cifras.muertos !== null || cifras.heridos !== null || cifras.desaparecidos !== null) && (
         <section className="mb-14">
           <div className="flex flex-col mb-6">
             <h2 className="font-serif text-display text-ink dark:text-ink-dark">
@@ -94,12 +168,12 @@ export default async function StatsPage() {
                   Fallecidos
                 </span>
                 <p className="font-serif text-hero lg:text-display text-ink dark:text-ink-dark mt-4 mb-2 font-semibold tnum">
-                  {stats.cifras.muertos !== null ? Intl.NumberFormat('es-VE').format(stats.cifras.muertos) : '—'}
+                  {cifras.muertos !== null ? Intl.NumberFormat('es-VE').format(cifras.muertos) : '—'}
                 </p>
               </div>
-              {stats.cifras.muertos_fuente && (
+              {cifras.muertos_fuente && (
                 <div className="font-mono text-[9px] text-ink-muted/80 dark:text-ink-muted-dark/80 uppercase tracking-wider">
-                  Fuente: {stats.cifras.muertos_fuente} · {tiempoRelativo(stats.cifras.muertos_at)}
+                  Fuente: {cifras.muertos_fuente} · {tiempoRelativo(cifras.muertos_at)}
                 </div>
               )}
             </div>
@@ -111,12 +185,12 @@ export default async function StatsPage() {
                   Heridos
                 </span>
                 <p className="font-serif text-hero lg:text-display text-ink dark:text-ink-dark mt-4 mb-2 font-semibold tnum">
-                  {stats.cifras.heridos !== null ? Intl.NumberFormat('es-VE').format(stats.cifras.heridos) : '—'}
+                  {cifras.heridos !== null ? Intl.NumberFormat('es-VE').format(cifras.heridos) : '—'}
                 </p>
               </div>
-              {stats.cifras.heridos_fuente && (
+              {cifras.heridos_fuente && (
                 <div className="font-mono text-[9px] text-ink-muted/80 dark:text-ink-muted-dark/80 uppercase tracking-wider">
-                  Fuente: {stats.cifras.heridos_fuente} · {tiempoRelativo(stats.cifras.heridos_at)}
+                  Fuente: {cifras.heridos_fuente} · {tiempoRelativo(cifras.heridos_at)}
                 </div>
               )}
             </div>
@@ -128,12 +202,12 @@ export default async function StatsPage() {
                   Desaparecidos
                 </span>
                 <p className="font-serif text-hero lg:text-display text-ink dark:text-ink-dark mt-4 mb-2 font-semibold tnum">
-                  {stats.cifras.desaparecidos !== null ? Intl.NumberFormat('es-VE').format(stats.cifras.desaparecidos) : '—'}
+                  {cifras.desaparecidos !== null ? Intl.NumberFormat('es-VE').format(cifras.desaparecidos) : '—'}
                 </p>
               </div>
-              {stats.cifras.desaparecidos_fuente && (
+              {cifras.desaparecidos_fuente && (
                 <div className="font-mono text-[9px] text-ink-muted/80 dark:text-ink-muted-dark/80 uppercase tracking-wider">
-                  Fuente: {stats.cifras.desaparecidos_fuente} · {tiempoRelativo(stats.cifras.desaparecidos_at)}
+                  Fuente: {cifras.desaparecidos_fuente} · {tiempoRelativo(cifras.desaparecidos_at)}
                 </div>
               )}
             </div>
@@ -155,7 +229,7 @@ export default async function StatsPage() {
           <div className="bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark p-6 rounded-sm flex justify-between items-center shadow-soft">
             <div>
               <p className="font-serif text-[clamp(3.5rem,10vw,5.5rem)] leading-none font-semibold text-ink dark:text-ink-dark tnum">
-                {stats.total_aprobadas}
+                {total}
               </p>
               <p className="font-mono text-[9px] uppercase tracking-widest text-ink-muted/90 dark:text-ink-muted-dark/90 mt-3 font-semibold">
                 Total de reportes aprobados
@@ -167,13 +241,26 @@ export default async function StatsPage() {
               Último reporte verificado
             </span>
             <p className="font-serif text-headline text-ink dark:text-ink-dark">
-              {tiempoRelativo(stats.ultima_at)}
+              {tiempoRelativo(ultimaAt)}
             </p>
             <span className="font-mono text-[8px] text-ink-muted/70 dark:text-ink-muted-dark/70 uppercase tracking-widest mt-2">
               Ingesta automática cada 5 minutos
             </span>
           </div>
         </div>
+      </section>
+
+      {/* Mezcla por categoría — donut de un vistazo */}
+      <section className="mb-14">
+        <div className="flex flex-col mb-6">
+          <h2 className="font-serif text-display text-ink dark:text-ink-dark">
+            Mezcla por categoría
+          </h2>
+          <p className="text-small text-ink/75 dark:text-ink-dark/75 mt-1">
+            Proporción de los reportes verificados según su categoría temática.
+          </p>
+        </div>
+        <DonaCategorias porTag={porTag} total={total} />
       </section>
 
       {/* Tabla por sección */}
@@ -188,7 +275,7 @@ export default async function StatsPage() {
         </div>
         <div className="border-t border-rule dark:border-rule-dark">
           {tagEntries.map(([tag, { label }]) => {
-            const count = stats.por_tag[tag] ?? 0
+            const count = porTag[tag] ?? 0
             const pct = Math.round((count / maxTag) * 100)
             const tagColor = TAG_COLORS[tag] ?? '#94A3B8'
             return (

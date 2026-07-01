@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
+import { MotionToggleButton } from './MotionPrefs'
 
 // Signature motif: a small seismogram trace. Used in the masthead and hero.
 function Seismograph({ className = '' }: { className?: string }) {
@@ -228,6 +229,8 @@ export function Navbar() {
           ) : (
             <div id="navbar-feed-actions" className="hidden sm:flex items-center gap-5 shrink-0" />
           )}
+
+          <MotionToggleButton />
 
           <span className="hidden sm:block h-6 w-px bg-rule dark:bg-rule-dark shrink-0" aria-hidden="true" />
 
