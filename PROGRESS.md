@@ -355,8 +355,10 @@
     - Rediseño de la cabecera editorial y del panel del boletín (tarjeta asimétrica de reportes verificados).
     - Unificación de los colores de categorías con `FeedNoticias.tsx` y refinamiento de la tabla de distribución (barras más delgadas de 4px de altura, rectangulares y con hover interactivo).
   - Corrección de contrastes WCAG AA (>=4.5:1) en textos secundarios sobre fondo paper en todas las páginas.
+  - **Recuperación del servidor de desarrollo (dev server)**: Solucionado un error 500 de webpack (`Cannot find module './948.js'`) generado por corrupción en la caché interna de Next.js, purgando completamente el directorio `.next` y relanzando el servidor local de desarrollo.
 - Verification:
   - Compilación limpia de producción y análisis de tipos pasados con éxito (`npm run build`).
+  - Servidor de desarrollo relanzado con éxito tras purgado de caché y respondiendo con código 200 en `/api/feed`.
 - Commits:
   - `6303c33` feat(donar): improve ui-ux and establish design system
   - `daf1f95` feat(stats): improve ui-ux and integrate casualties data
