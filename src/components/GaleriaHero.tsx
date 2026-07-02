@@ -12,7 +12,7 @@ export interface NoticiaGaleria {
   fuente: string
   tag: string | null
   publicado_at: string
-  imagen_url: string  // guaranteed non-null by .not('imagen_url','is',null) + empty-string filter in ingest
+  imagen_url: string | null  // feed query filters NULL and '' (the ingest backfill's "scraped, none found" sentinel); still guarded defensively below
 }
 
 // Presentational only — `noticias` is a slice of the shared FeedNoticias pool
@@ -67,7 +67,7 @@ export default function GaleriaHero({ noticias, cargando }: { noticias: NoticiaG
               whileHover={{ y: -3 }}
               className="w-[300px] flex-shrink-0 rounded-sm overflow-hidden bg-panel dark:bg-panel-dark border border-rule dark:border-rule-dark hover:bg-ink/[0.01] dark:hover:bg-ink-dark/[0.01] hover:border-crisis-red/30 transition-all duration-200"
             >
-              <GaleriaImagen src={n.imagen_url} alt={n.titulo} tag={n.tag} />
+              {n.imagen_url && <GaleriaImagen src={n.imagen_url} alt={n.titulo} tag={n.tag} />}
               <div className="p-4">
                 {/* min-h reserves 2 title lines so a 1-line title doesn't shorten the
                     card; truncate keeps the meta to a single line. Fixed width above +
