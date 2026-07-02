@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { MapaVenezuelaSVG } from './MapaVenezuelaSVG'
 import GaleriaHero, { type NoticiaGaleria } from './GaleriaHero'
 import CardImage, { SismoPlaceholder, SismoTrace, TagPill } from './CardImage'
+import { TAGS, type TagInfo } from '@/lib/tags'
 
 type Noticia = {
   id: string
@@ -54,18 +55,12 @@ const ZONAS: { value: string; label: string }[] = [
   { value: 'cojedes', label: 'Cojedes' },
 ]
 
-// Color text + left border per category. No pill backgrounds.
-const TAG_META: Record<string, { label: string; border: string; text: string; short: string }> = {
-  todos:             { label: 'Todas las categorías', border: 'border-l-[#444]',       text: 'text-ink-muted dark:text-ink-muted-dark', short: 'Todas'    },
-  sismo:             { label: 'Sismo',                border: 'border-l-[#CF1020]',    text: 'text-[#CF1020] dark:text-[#EF4444]',                         short: 'Sismo'    },
-  rescate:           { label: 'Rescate',              border: 'border-l-[#F97316]',    text: 'text-[#F97316] dark:text-[#FB923C]',                         short: 'Rescate'  },
-  desaparecidos:     { label: 'Desaparecidos',        border: 'border-l-[#A855F7]',    text: 'text-[#A855F7] dark:text-[#C084FC]',                         short: 'Desap.'   },
-  puntos_acopio:     { label: 'Puntos de acopio',     border: 'border-l-[#22C55E]',    text: 'text-[#22C55E] dark:text-[#4ADE80]',                         short: 'Acopio'   },
-  ayuda_humanitaria: { label: 'Ayuda humanitaria',    border: 'border-l-[#3B82F6]',    text: 'text-[#3B82F6] dark:text-[#60A5FA]',                         short: 'Ayuda'    },
-  replicas:          { label: 'Réplicas',             border: 'border-l-[#EAB308]',    text: 'text-[#EAB308] dark:text-[#FACC15]',                         short: 'Réplicas' },
-  donaciones:        { label: 'Donaciones',           border: 'border-l-[#14B8A6]',    text: 'text-[#14B8A6] dark:text-[#2DD4BF]',                         short: 'Donar'    },
-  internacional:     { label: 'Internacional',        border: 'border-l-[#94A3B8]',    text: 'text-[#94A3B8] dark:text-[#CBD5E1]',                         short: 'Int.'     },
-}
+// Color text + left border per category. No pill backgrounds. Re-exposed as a
+// local alias (widened to a plain string index, since this file looks up
+// TAG_META by an arbitrary `n.tag` string) so the rest of this file (filter
+// bar, curated sections, card grid) keeps reading `TAG_META` — the underlying
+// data now lives in '@/lib/tags'.
+const TAG_META: Record<string, TagInfo> = TAGS
 
 const LIMIT = 30
 

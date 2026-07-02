@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import NextImage from 'next/image'
+import { getDotColorClass, TAG_SHORT_NAMES } from '@/lib/tags'
 
 // Signature seismogram path (same trace as the Navbar masthead motif).
 // pathLength=1 normalizes the dash math so the drawing animation works at
@@ -73,9 +74,9 @@ export default function CardImage({ src, alt, priority = false, sizes, imgClassN
     <>
       {!loaded && (
         <>
-          <div className="absolute inset-0 skeleton" style={{ zIndex: 5 }} />
-          <div className="absolute inset-0 sismo-paper bg-gradient-to-br from-paper/20 to-paper/60 dark:from-[#1C1C1F]/10 dark:to-[#1C1C1F]/40" style={{ zIndex: 6 }} />
-          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 7 }}>
+          <div className="absolute inset-0 skeleton z-[5]" />
+          <div className="absolute inset-0 sismo-paper bg-gradient-to-br from-paper/20 to-paper/60 dark:from-[#1C1C1F]/10 dark:to-[#1C1C1F]/40 z-[6]" />
+          <div className="absolute inset-0 flex items-center justify-center z-[7]">
             <SismoTrace animated className="w-40 h-12 text-crisis-red/50 dark:text-crisis-red/60" />
           </div>
         </>
@@ -97,39 +98,13 @@ export default function CardImage({ src, alt, priority = false, sizes, imgClassN
   )
 }
 
-export function getDotColorClass(tag: string): string {
-  switch (tag) {
-    case 'sismo':             return 'bg-[#CF1020] dark:bg-[#EF4444]'
-    case 'rescate':           return 'bg-[#F97316] dark:bg-[#FB923C]'
-    case 'desaparecidos':     return 'bg-[#A855F7] dark:bg-[#C084FC]'
-    case 'puntos_acopio':     return 'bg-[#22C55E] dark:bg-[#4ADE80]'
-    case 'ayuda_humanitaria': return 'bg-[#3B82F6] dark:bg-[#60A5FA]'
-    case 'replicas':          return 'bg-[#EAB308] dark:bg-[#FACC15]'
-    case 'donaciones':        return 'bg-[#14B8A6] dark:bg-[#2DD4BF]'
-    case 'internacional':     return 'bg-[#94A3B8] dark:bg-[#CBD5E1]'
-    default:                  return 'bg-ink-muted'
-  }
-}
-
-const TAG_SHORT_NAMES: Record<string, string> = {
-  todos: 'Todas',
-  sismo: 'Sismo',
-  rescate: 'Rescate',
-  desaparecidos: 'Desap.',
-  puntos_acopio: 'Acopio',
-  ayuda_humanitaria: 'Ayuda',
-  replicas: 'Réplicas',
-  donaciones: 'Donar',
-  internacional: 'Int.',
-}
-
 export function TagPill({ tag }: { tag: string }) {
-  const shortName = TAG_SHORT_NAMES[tag] ?? tag
+  const shortName = TAG_SHORT_NAMES[tag] ?? tag.replace(/_/g, ' ')
   const dotColor = getDotColorClass(tag)
   return (
     <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 bg-paper/95 dark:bg-[#1C1C1F]/95 border border-rule dark:border-rule-strong text-ink dark:text-ink-dark rounded-sm shadow-sm backdrop-blur-sm shrink-0">
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-      {shortName.replace(/_/g, ' ')}
+      {shortName}
     </span>
   )
 }

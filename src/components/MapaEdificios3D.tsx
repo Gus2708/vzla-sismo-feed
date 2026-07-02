@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { SismoTrace } from './CardImage'
+import { SismoLoading } from './SismoLoading'
 
 // ArcGIS webscene hosted on arcgis.com. We embed the public viewer via iframe
 // rather than pulling in @arcgis/core — the SDK is hundreds of KB and we only
@@ -30,12 +30,11 @@ export function MapaEdificios3DView() {
               <div className="h-5 w-32 skeleton rounded-sm" />
               <div className="h-5 w-24 skeleton rounded-sm" />
             </div>
-            <div className="flex-1 flex flex-col justify-center items-center gap-4">
-              <SismoTrace animated className="w-40 h-12 text-crisis-red/50 dark:text-crisis-red/60" />
-              <p className="text-small font-semibold text-ink-muted dark:text-ink-muted-dark">
-                Inicializando motor cartográfico 3D...
-              </p>
-            </div>
+            <SismoLoading
+              caption="Inicializando motor cartográfico 3D..."
+              className="flex-1 flex flex-col justify-center items-center gap-4"
+              captionClassName="text-small font-semibold text-ink-muted dark:text-ink-muted-dark"
+            />
             <div className="h-8 w-full skeleton rounded-sm" />
           </div>
         )}
